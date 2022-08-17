@@ -2,6 +2,7 @@ from transformers import T5Tokenizer
 from datasets import load_dataset
 from tqdm import tqdm
 import json
+import requests
 
 model_id = "t5-base"
 num_tests = 1_000
@@ -24,3 +25,8 @@ jtests = json.dumps(tests)
 with open(f"{model_id}-tests.json", "w") as f:
     f.write(jtests)
 
+jtokenizer_url = "https://huggingface.co/t5-base/raw/main/tokenizer.json"
+r = requests.get(jtokenizer_url)
+jtokenizer = r.text
+with open(f"{model_id}-tokenizer.json", "w") as f:
+    f.write(jtokenizer)
