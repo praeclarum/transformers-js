@@ -9,9 +9,11 @@ class Tokenizer {
         this.decoder = decoder;
         this.vocabIndex = new Map(vocab.map((x, i) => [this.normalize(x), i]));
         this.starts = {};
+        this.eos = "</s>";
+        this.unk = "<unk>";
     }
     preprocess(text) {
-        return " " + text + "</s>";
+        return " " + text + this.eos;
     }
     normalize(text) {
         return text.replace(/\s+/g, this.decoder.replacement);
@@ -56,7 +58,9 @@ class Tokenizer {
                     b = p - 1;
                 }
                 else {
-                    throw new Error("No token found for " + maybeToken);
+                    tokens.push(this.unk);
+                    prevToken = null;
+                    b = p;
                 }
             } else if (starts.length == 1) {
                 const start = starts[0];
