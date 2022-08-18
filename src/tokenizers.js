@@ -106,6 +106,101 @@ class Tokenizer {
     }
 }
 
+class SentenceLattice {
+    constructor(sentence, bos_id, eos_id) {
+        this.sentence = sentence;
+        this.len = sentence.length;
+        this.bos_id = bos_id;
+        this.eos_id = eos_id;
+        this.nodes = [];
+        this.begin_nodes = new Array(len + 1);
+        this.end_nodes = new Array(len + 1);
+        for (let i = 0; i < len + 1; i++) {
+            this.begin_nodes[i] = [];
+            this.end_nodes[i] = [];
+        }
+        const bos = new SentenceNode(this.bos_id, 0, 0, 0, 0.0);
+        const eos = new SentenceNode(this.eos_id, 1, this.len, 0, 0.0);
+        this.nodes.push(bos.clone());
+        this.nodes.push(eos.clone());
+        this.begin_nodes[len].push(eos);
+        this.end_nodes[0].push(bos);
+    }
+
+    insert(pos, length, score, id) {
+        const node_id = this.nodes.length;
+        const node = new SentenceNode(id, node_id, pos, length, score);
+        this.begin_nodes[pos].push(node.clone());
+        this.end_nodes[pos + length].push(node.clone());
+        this.nodes.push(node);
+    }
+
+    viterbi() {
+        const len = this.len;
+        let pos = 0;
+        while (pos <= len) {
+            if (this.begin_nodes[pos].length == 0) {
+                return [];
+            }
+            for (let rnode of this.begin_nodes[pos]) {
+                rnode.prev = null;
+                let best_score = 0.0;
+                let best_node = null;
+                for (let lnode of this.end_nodes[pos]) {
+                    const score = lnode.backtrace_score + rnode.score;
+                    if (best_node === null || score > best_score) {
+                        best_node = lnode.clone();
+                        best_score = score;
+                    }
+                }
+                if (best_node !== null) {
+                    rnode.prev = best_node.clone();
+                    rnode.backtrace_score = best_score;
+                }
+                else {
+                    return [];
+                }
+            }
+            pos++;
+        }
+        const results = [];
+        const root = this.begin_nodes[len][0];
+        const prev = root.prev;
+        if (prev === null) {
+            return [];
+        }
+        const node = prev.clone();
+        while (node.prev !== null) {
+            results.push(node.clone());
+            const n = node.clone();
+            node = n.prev.clone();
+        }
+        results.reverse();
+        return results;
+    }
+
+    piece(node) {
+        return this.sentence.slice(node.pos, node.pos + node.length);
+    }
+
+    tokens() {
+        const nodes = this.viterbi();
+        return nodes.map(this.piece);
+    }
+}
+
+class SentenceNode {
+    constructor(id, node_id, pos, length, score) {
+        this.id = id;
+        this.node_id = node_id;
+        this.pos = pos;
+        this.length = length;
+        this.score = score;
+        this.prev = null;
+        this.backtrace_score = 0.0;
+    }
+}
+
 async function loadTokenizer(url) {
     function loadNormalizer(jnormalizer) {
         switch (jnormalizer.type) {
