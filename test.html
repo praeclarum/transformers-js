@@ -86,28 +86,38 @@
                     $col.className = pass ? 'pass' : 'fail';
                     $test.appendChild($col);
                 }
-                function encodeIndexToString(tokenIndex) {
-                    if (tokenIndex === undefined)
+                function encodeIndexToString(tokenId) {
+                    if (tokenId === undefined)
                         return "[undefined]";
-                    if (tokenIndex === null)
+                    if (tokenId === null)
                         return "[null]";
-                    const score = Math.round(tokenizer.vocab[tokenIndex][1]*10.0)/10.0;
-                    return `${tokenIndex}(${score})`;
+                    if (tokenId in tokenizer.vocab) {
+                        const score = Math.round(tokenizer.vocab[tokenId][1]*10.0)/10.0;
+                        return `${tokenId}(${score})`;
+                    }
+                    else {
+                        return `${tokenId}(?)`;
+                    }
                 }
-                function encodeTokenToString(tokenIndex) {
-                    if (tokenIndex === undefined)
+                function encodeTokenToStringAndScore(tokenId) {
+                    if (tokenId === undefined)
                         return "[undefined]";
-                    if (tokenIndex === null)
+                    if (tokenId === null)
                         return "[null]";
-                    const score = Math.round(tokenizer.vocab[tokenIndex][1]*10.0)/10.0;
-                    return `${tokenizer.vocab[tokenIndex][0]}(${score})`;
+                    if (tokenId in tokenizer.vocab) {
+                        const score = Math.round(tokenizer.vocab[tokenId][1]*10.0)/10.0;
+                        return `${tokenizer.vocab[tokenId][0]}(${score})`;
+                    }
+                    else {
+                        return `[${tokenId}]`;
+                    }
                 }
                 appendCol(pass ? 'PASS' : 'FAIL', pass);
                 appendCol(inputText, true);
                 appendCol(expectedDecode, true);
                 appendCol(testDecode, decodePass);
-                appendCol(expectedEncode.map(encodeTokenToString).join(' '), true);
-                appendCol(testEncode.map(encodeTokenToString).join(' '), encodePass);
+                appendCol(expectedEncode.map(encodeTokenToStringAndScore).join(' '), true);
+                appendCol(testEncode.map(encodeTokenToStringAndScore).join(' '), encodePass);
                 appendCol(expectedEncode.map(encodeIndexToString).join(' '), true);
                 appendCol(testEncode.map(encodeIndexToString).join(' '), encodePass);
                 $tests.appendChild($test);

@@ -1,4 +1,4 @@
-"use strict";
+//"use strict";
 
 console.log("Tokenizers");
 
@@ -7,85 +7,56 @@ class Tokenizer {
         this.vocab = vocab;
         this.normalizer = normalizer;
         this.decoder = decoder;
-        this.vocabIndex = new Map(vocab.map((x, i) => [this.normalize(x[0]), i]));
-        this.starts = {};
-        this.eos = "</s>";
-        this.unk = "<unk>";
+        this.tokenToIds = new Map(vocab.map((x, i) => [this.normalize(x[0]), i]));
+        this.bosToken = this.normalize(" ");
+        this.bosTokenId = this.getTokenId(this.bosToken);
+        this.eosToken = "</s>";
+        this.unkToken = "<unk>";
+        this.trie = new CharTrie();
+        vocab.forEach(x => this.trie.push(x[0]));
+    }
+    getTokenId(normalizedToken) {
+        return this.tokenToIds.get(normalizedToken);
     }
     preprocess(text) {
-        return " " + text + this.eos;
+        return " " + text + this.eosToken;
     }
     normalize(text) {
         return text.replace(/\s+/g, this.decoder.replacement);
     }
-    denormalize(text) {
-        return text.replaceAll(this.decoder.replacement, " ");
+    denormalize(normalized) {
+        return normalized.replaceAll(this.decoder.replacement, " ");
     }
-    getStarts(start) {
-        if (start.length <= 0) {
-            return this.vocab;
-        }
-        if (this.starts[start]) {
-            return this.starts[start];
-        }
-        const parentTokens = this.getStarts(start.slice(0, -1));
-        const starts = [];
-        parentTokens.forEach(token => {
-            if (token[0].startsWith(start)) {
-                starts.push(token);
+    populateNodes(lattice) {
+        const unkScore = this.minScore - 10.0;
+
+        const sentence = lattice.sentence;
+        const len = sentence.length;
+
+        let beginPos = 0;
+        while (beginPos < len) {
+            const mblen = sentence.length - beginPos;
+            let hasSingleNode = false;
+            for (let token of this.trie.commonPrefixSearch(sentence.slice(beginPos, beginPos + mblen))) {
+                const tokenId = this.getTokenId(token);
+                const tokenScore = this.vocab[tokenId][1];
+                const n = token.length;
+                lattice.insert(beginPos, n, tokenScore, tokenId);
+                if (!hasSingleNode && n ==mblen) {
+                    hasSingleNode = true;
+                }
             }
-        });
-        this.starts[start] = starts;
-        return starts;
+            if (!hasSingleNode) {
+                lattice.insert(beginPos, mblen, unkScore, this.unkTokenId);
+            }
+            beginPos += mblen;
+        }
     }
     tokenize(normalized) {
-        let b = 0;
-        let e = normalized.length;
-        let p = 0;
-        let bestMatchToken = null;
-        let bestMatchScore = 1.0e6;
-        let bestMatchP = 0;
-        let bestMatchB = 0;
-        const tokens = [];
-        while (p < e) {
-            const maybeToken = normalized.slice(b, p);
-            if (maybeToken.length == 0) {
-                p++;
-                continue;
-            }
-            const starts = this.getStarts(maybeToken);
-            const match = starts.find(x => x[0] == maybeToken);
-            if (match !== undefined) {
-                const matchScore = match[1];
-                if (matchScore + bestMatchScore < bestMatchScore) {
-                    bestMatchScore = matchScore + bestMatchScore;
-                    bestMatchToken = match[0];
-                    bestMatchP = p;
-                    bestMatchB = b;
-                }
-            }
-
-            if (starts.length == 0) {
-                if (bestMatchToken) {
-                    tokens.push(bestMatchToken);
-                    b = bestMatchP;
-                    p = b + 1;
-                }
-                else {
-                    tokens.push(this.unk);
-                    b = p;
-                }
-                bestMatchToken = null;
-                bestMatchScore = 1.0e6;
-            } else {
-                p++;
-            }
-        }
-        const lastToken = normalized.slice(b);
-        if (lastToken.length > 0) {
-            tokens.push(lastToken);
-        }
-        return tokens.map(x => this.vocabIndex.get(x));
+        const lattice = new TokenLattice(normalized, this.bosTokenId, this.eosTokenId);
+        this.populateNodes(lattice);
+        const tokens = lattice.tokens();
+        return tokens.map(x => this.tokenToIds.get(x));
     }
     encode(text) {
         const pp = this.preprocess(text);
@@ -106,32 +77,91 @@ class Tokenizer {
     }
 }
 
-class SentenceLattice {
-    constructor(sentence, bos_id, eos_id) {
+class CharTrie {
+    constructor() {
+        this.root = CharTrieNode.default();
+    }
+    push(text) {
+        let node = this.root;
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            let child = node.children.get(ch);
+            if (child === undefined) {
+                child = CharTrieNode.default();
+                node.children.set(ch,  child);
+            }
+            node = child;
+        }
+        node.isLeaf = true;
+    }
+    *commonPrefixSearch(text) {
+        let i = 0;
+        let len = text.length;
+        let node = this.root;
+        let prefix = "";
+        while (i < len) {
+            let result = null;
+            while (i < len) {
+                const ch = text[i];
+                if (ch === undefined) {
+                    break;
+                }
+                i += 1;
+                prefix += ch;
+                const child = node.children.get(ch);
+                if (child === undefined) {
+                    break;
+                }
+                node = child;
+                if (node.isLeaf) {
+                    result = prefix;
+                    break;
+                }
+            }
+            if (result === null) {
+                break;
+            }
+            yield result;
+        }
+    }
+}
+
+class CharTrieNode {
+    constructor(isLeaf, children) {
+        this.isLeaf = isLeaf;
+        this.children = children;
+    }
+    static default() {
+        return new CharTrieNode(false, new Map());
+    }
+}
+
+class TokenLattice {
+    constructor(sentence, bosTokenId, eosTokenId) {
         this.sentence = sentence;
         this.len = sentence.length;
-        this.bos_id = bos_id;
-        this.eos_id = eos_id;
+        this.bosTokenId = bosTokenId;
+        this.eosTokenId = eosTokenId;
         this.nodes = [];
-        this.begin_nodes = new Array(len + 1);
-        this.end_nodes = new Array(len + 1);
-        for (let i = 0; i < len + 1; i++) {
-            this.begin_nodes[i] = [];
-            this.end_nodes[i] = [];
+        this.beginNodes = new Array(this.len + 1);
+        this.endNodes = new Array(this.len + 1);
+        for (let i = 0; i < this.len + 1; i++) {
+            this.beginNodes[i] = [];
+            this.endNodes[i] = [];
         }
-        const bos = new SentenceNode(this.bos_id, 0, 0, 0, 0.0);
-        const eos = new SentenceNode(this.eos_id, 1, this.len, 0, 0.0);
+        const bos = new SentenceLatticeNode(this.bosTokenId, 0, 0, 0, 0.0);
+        const eos = new SentenceLatticeNode(this.eosTokenId, 1, this.len, 0, 0.0);
         this.nodes.push(bos.clone());
         this.nodes.push(eos.clone());
-        this.begin_nodes[len].push(eos);
-        this.end_nodes[0].push(bos);
+        this.beginNodes[this.len].push(eos);
+        this.endNodes[0].push(bos);
     }
 
-    insert(pos, length, score, id) {
-        const node_id = this.nodes.length;
-        const node = new SentenceNode(id, node_id, pos, length, score);
-        this.begin_nodes[pos].push(node.clone());
-        this.end_nodes[pos + length].push(node.clone());
+    insert(pos, length, score, tokenId) {
+        const nodeId = this.nodes.length;
+        const node = new SentenceLatticeNode(tokenId, nodeId, pos, length, score);
+        this.beginNodes[pos].push(node.clone());
+        this.endNodes[pos + length].push(node.clone());
         this.nodes.push(node);
     }
 
@@ -139,23 +169,23 @@ class SentenceLattice {
         const len = this.len;
         let pos = 0;
         while (pos <= len) {
-            if (this.begin_nodes[pos].length == 0) {
+            if (this.beginNodes[pos].length == 0) {
                 return [];
             }
-            for (let rnode of this.begin_nodes[pos]) {
+            for (let rnode of this.beginNodes[pos]) {
                 rnode.prev = null;
-                let best_score = 0.0;
-                let best_node = null;
-                for (let lnode of this.end_nodes[pos]) {
-                    const score = lnode.backtrace_score + rnode.score;
-                    if (best_node === null || score > best_score) {
-                        best_node = lnode.clone();
-                        best_score = score;
+                let bestScore = 0.0;
+                let bestNode = null;
+                for (let lnode of this.endNodes[pos]) {
+                    const score = lnode.backtraceScore + rnode.score;
+                    if (bestNode === null || score > bestScore) {
+                        bestNode = lnode.clone();
+                        bestScore = score;
                     }
                 }
-                if (best_node !== null) {
-                    rnode.prev = best_node.clone();
-                    rnode.backtrace_score = best_score;
+                if (bestNode !== null) {
+                    rnode.prev = bestNode.clone();
+                    rnode.backtraceScore = bestScore;
                 }
                 else {
                     return [];
@@ -164,7 +194,7 @@ class SentenceLattice {
             pos++;
         }
         const results = [];
-        const root = this.begin_nodes[len][0];
+        const root = this.beginNodes[len][0];
         const prev = root.prev;
         if (prev === null) {
             return [];
@@ -189,15 +219,21 @@ class SentenceLattice {
     }
 }
 
-class SentenceNode {
-    constructor(id, node_id, pos, length, score) {
-        this.id = id;
-        this.node_id = node_id;
+class SentenceLatticeNode {
+    constructor(tokenId, nodeId, pos, length, score) {
+        this.tokenId = tokenId;
+        this.nodeId = nodeId;
         this.pos = pos;
         this.length = length;
         this.score = score;
         this.prev = null;
-        this.backtrace_score = 0.0;
+        this.backtraceScore = 0.0;
+    }
+    clone() {
+        const n = new SentenceLatticeNode(this.tokenId, this.nodeId, this.pos, this.length, this.score);
+        n.prev = this.prev;
+        n.backtraceScore = this.backtraceScore;
+        return n;
     }
 }
 
