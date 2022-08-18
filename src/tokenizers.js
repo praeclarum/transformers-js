@@ -1,4 +1,4 @@
-
+"use strict";
 
 console.log("Tokenizers");
 
@@ -42,7 +42,10 @@ class Tokenizer {
         let b = 0;
         let e = normalized.length;
         let p = 0;
-        let prevToken = null;
+        let bestMatchToken = null;
+        let bestMatchScore = 1.0e6;
+        let bestMatchP = 0;
+        let bestMatchB = 0;
         const tokens = [];
         while (p < e) {
             const maybeToken = normalized.slice(b, p);
@@ -51,30 +54,30 @@ class Tokenizer {
                 continue;
             }
             const starts = this.getStarts(maybeToken);
+            const match = starts.find(x => x[0] == maybeToken);
+            if (match !== undefined) {
+                const matchScore = match[1];
+                if (matchScore + bestMatchScore < bestMatchScore) {
+                    bestMatchScore = matchScore + bestMatchScore;
+                    bestMatchToken = match[0];
+                    bestMatchP = p;
+                    bestMatchB = b;
+                }
+            }
+
             if (starts.length == 0) {
-                if (prevToken) {
-                    tokens.push(prevToken);
-                    prevToken = null;
-                    b = p - 1;
+                if (bestMatchToken) {
+                    tokens.push(bestMatchToken);
+                    b = bestMatchP;
+                    p = b + 1;
                 }
                 else {
                     tokens.push(this.unk);
-                    prevToken = null;
                     b = p;
                 }
-            } else if (starts.length == 1) {
-                const start = starts[0][0];
-                if (start.length == maybeToken.length) {
-                    tokens.push(start);
-                    prevToken = null;
-                    b = p;
-                    p++;
-                }
-                else {
-                    p++;
-                }
+                bestMatchToken = null;
+                bestMatchScore = 1.0e6;
             } else {
-                prevToken = maybeToken;
                 p++;
             }
         }

@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <style>
         .fail { color: red; }
-        td { border-bottom: 1px solid #ccc; text-align: left; vertical-align: top; }
-        th { border-bottom: 2px solid #444; text-align: left; vertical-align: top; }
+        td { border-bottom: 1px solid #ccc; text-align: left; vertical-align: top; width: 10%; }
+        th { border-bottom: 2px solid #444; text-align: left; vertical-align: top; width: 10%; }
     </style>
 </head>
 
@@ -99,8 +99,8 @@
                         return '[' + x + ']';
                     }
                 }).join(' '), encodePass);
-                appendCol(expectedEncode.join(' '), true);
-                appendCol(testEncode.join(' '), encodePass);
+                appendCol(expectedEncode.map(x => x ? x : "[undefined]").join(' '), true);
+                appendCol(testEncode.map(x => x ? x : "[undefined]").join(' '), encodePass);
                 $tests.appendChild($test);
             }
             $summary.innerHTML = `<b>${numEncodePass}/${numEncode}</b> encode passes, <b>${numDecodePass}/${numDecode}</b> decode passes`;
