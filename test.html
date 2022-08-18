@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <style>
         .fail { color: red; }
-        td { border-bottom: 1px solid #ccc; text-align: left; }
-        th { border-bottom: 2px solid #444; text-align: left; }
+        td { border-bottom: 1px solid #ccc; text-align: left; vertical-align: top; }
+        th { border-bottom: 2px solid #444; text-align: left; vertical-align: top; }
     </style>
 </head>
 
@@ -90,8 +90,15 @@
                 appendCol(inputText, true);
                 appendCol(expectedDecode, true);
                 appendCol(testDecode, decodePass);
-                appendCol(expectedEncode.map(x => tokenizer.vocab[x]).join(' '), true);
-                appendCol(testEncode.map(x => tokenizer.vocab[x]).join(' '), encodePass);
+                appendCol(expectedEncode.map(x => tokenizer.vocab[x][0]).join(' '), true);
+                appendCol(testEncode.map(x => {
+                    if (x in tokenizer.vocab) {
+                        return tokenizer.vocab[x][0];
+                    }
+                    else {
+                        return '[' + x + ']';
+                    }
+                }).join(' '), encodePass);
                 appendCol(expectedEncode.join(' '), true);
                 appendCol(testEncode.join(' '), encodePass);
                 $tests.appendChild($test);

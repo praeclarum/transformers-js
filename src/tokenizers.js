@@ -7,7 +7,7 @@ class Tokenizer {
         this.vocab = vocab;
         this.normalizer = normalizer;
         this.decoder = decoder;
-        this.vocabIndex = new Map(vocab.map((x, i) => [this.normalize(x), i]));
+        this.vocabIndex = new Map(vocab.map((x, i) => [this.normalize(x[0]), i]));
         this.starts = {};
         this.eos = "</s>";
         this.unk = "<unk>";
@@ -31,7 +31,7 @@ class Tokenizer {
         const parentTokens = this.getStarts(start.slice(0, -1));
         const starts = [];
         parentTokens.forEach(token => {
-            if (token.startsWith(start)) {
+            if (token[0].startsWith(start)) {
                 starts.push(token);
             }
         });
@@ -63,9 +63,9 @@ class Tokenizer {
                     b = p;
                 }
             } else if (starts.length == 1) {
-                const start = starts[0];
+                const start = starts[0][0];
                 if (start.length == maybeToken.length) {
-                    tokens.push(starts[0]);
+                    tokens.push(start);
                     prevToken = null;
                     b = p;
                     p++;
@@ -91,7 +91,14 @@ class Tokenizer {
         return tokenized;
     }
     decode(tokens) {
-        const normalized = tokens.map(x => this.vocab[x]).join("");
+        const normalized = tokens.map(x => {
+            if (x in this.vocab) {
+                return this.vocab[x][0];
+            }
+            else {
+                return '[' + x + ']';
+            }
+        }).join('');
         return this.denormalize(normalized).slice(1);
     }
 }
@@ -108,6 +115,6 @@ async function loadTokenizer(url) {
     const response = await fetch(url);
     const jtokenizer = await response.json();
     console.log(jtokenizer);
-    return new Tokenizer(jtokenizer.model.vocab.map(x => x[0]), loadNormalizer(jtokenizer.normalizer), jtokenizer.decoder);
+    return new Tokenizer(jtokenizer.model.vocab, loadNormalizer(jtokenizer.normalizer), jtokenizer.decoder);
 }
 
