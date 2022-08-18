@@ -16,11 +16,12 @@
             <tr>
                 <th>Test</th>
                 <th>Text</th>
+                <th>Decoded</th>
+                <th>Test Decoded</th>
+                <th>Token Text</th>
+                <th>Expected Token Text</th>
                 <th>Tokens</th>
-                <th>Token Texts</th>
-                <th>Encoded Token Texts</th>
-                <th>Encoded Tokens</th>
-                <th>Decoded Text</th>
+                <th>Test Tokens</th>
             </tr>
         </thead>
         <tbody id="tests"></tbody>
@@ -44,18 +45,19 @@
             let numDecode = 0;
             let numDecodePass = 0;
             for (const test of tests) {
-                const expectedDecode = test[0];
+                const inputText = test[0];
                 const expectedEncode = test[1];
+                const expectedDecode = test[2];
                 let testEncode = "";
                 try {
-                    testEncode = tokenizer.encode(expectedDecode);
+                    testEncode = tokenizer.encode(inputText);
                 }
                 catch (e) {
                     testEncode = ["ERROR " + e.message];
                 }
                 let testDecode = "";
                 try {
-                    testDecode = tokenizer.decode(expectedEncode);
+                    testDecode = tokenizer.decode(testEncode);
                 }
                 catch (e) {
                     testDecode = "ERROR " + e.message;
@@ -83,12 +85,13 @@
                     $test.appendChild($col);
                 }
                 appendCol(pass ? 'PASS' : 'FAIL', pass);
+                appendCol(inputText, true);
                 appendCol(expectedDecode, true);
-                appendCol(expectedEncode.join(' '), true);
+                appendCol(testDecode, decodePass);
                 appendCol(expectedEncode.map(x => tokenizer.vocab[x]).join(' '), true);
                 appendCol(testEncode.map(x => tokenizer.vocab[x]).join(' '), true);
+                appendCol(expectedEncode.join(' '), true);
                 appendCol(testEncode.join(' '), encodePass);
-                appendCol(testDecode, decodePass);
                 $tests.appendChild($test);
             }
             $summary.innerHTML = `<b>${numEncodePass}/${numEncode}</b> encode passes, <b>${numDecodePass}/${numDecode}</b> decode passes`;

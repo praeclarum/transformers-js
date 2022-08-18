@@ -87,7 +87,8 @@ class Tokenizer {
         return tokenized;
     }
     decode(tokens) {
-        return this.denormalize(tokens.map(x => this.vocab[x]).join("")).slice(1).replace("</s>", "");
+        const normalized = tokens.map(x => this.vocab[x]).join("");
+        return this.denormalize(normalized).slice(1);
     }
 }
 
