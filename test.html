@@ -122,10 +122,8 @@
                 appendCol(testEncode.map(encodeIndexToString).join(' '), encodePass);
                 $tests.appendChild($test);
             }
-            $summary.innerHTML = `<b>${numEncodePass}/${numEncode}</b> encode passes, <b>${numDecodePass}/${numDecode}</b> decode passes`;
+            $summary.innerHTML = `<b style='color:green;'>${Math.round(100.0*numEncodePass/numEncode)}% ${numEncodePass}/${numEncode}</b> encode passes, <b style='color:red;'>${numDecodePass}/${numDecode}</b> decode passes`;
         }
-
-        
 
         main();
 

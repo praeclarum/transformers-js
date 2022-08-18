@@ -35,17 +35,21 @@ class Tokenizer {
 
         let beginPos = 0;
         while (beginPos < len) {
-            const mblen = sentence.length - beginPos;
+            const mblen = 1;
             let hasSingleNode = false;
-            for (let token of this.trie.commonPrefixSearch(sentence.slice(beginPos, beginPos + mblen))) {
+            // console.log("PREFIX SEARCH", sentence.slice(beginPos));
+            const tokens = [];
+            for (let token of this.trie.commonPrefixSearch(sentence.slice(beginPos))) {
+                tokens.push(token);
                 const tokenId = this.getTokenId(token);
                 const tokenScore = this.vocab[tokenId][1];
                 const n = token.length;
                 lattice.insert(beginPos, n, tokenScore, tokenId);
-                if (!hasSingleNode && n ==mblen) {
+                if (!hasSingleNode && n == mblen) {
                     hasSingleNode = true;
                 }
             }
+            // console.log("SEARCH RESULTS", tokens);
             if (!hasSingleNode) {
                 lattice.insert(beginPos, mblen, unkScore, this.unkTokenId);
             }
@@ -95,33 +99,15 @@ class CharTrie {
         node.isLeaf = true;
     }
     *commonPrefixSearch(text) {
-        let i = 0;
-        let len = text.length;
         let node = this.root;
         let prefix = "";
-        while (i < len) {
-            let result = null;
-            while (i < len) {
-                const ch = text[i];
-                if (ch === undefined) {
-                    break;
-                }
-                i += 1;
-                prefix += ch;
-                const child = node.children.get(ch);
-                if (child === undefined) {
-                    break;
-                }
-                node = child;
-                if (node.isLeaf) {
-                    result = prefix;
-                    break;
-                }
+        for (let i = 0; i < text.length && node !== undefined; i++) {
+            const ch = text[i];
+            prefix += ch;
+            node = node.children.get(ch);
+            if (node !== undefined && node.isLeaf) {
+                yield prefix;
             }
-            if (result === null) {
-                break;
-            }
-            yield result;
         }
     }
 }
@@ -160,8 +146,8 @@ class TokenLattice {
     insert(pos, length, score, tokenId) {
         const nodeId = this.nodes.length;
         const node = new SentenceLatticeNode(tokenId, nodeId, pos, length, score);
-        this.beginNodes[pos].push(node.clone());
-        this.endNodes[pos + length].push(node.clone());
+        this.beginNodes[pos].push(node);
+        this.endNodes[pos + length].push(node);
         this.nodes.push(node);
     }
 
@@ -184,7 +170,7 @@ class TokenLattice {
                     }
                 }
                 if (bestNode !== null) {
-                    rnode.prev = bestNode.clone();
+                    rnode.prev = bestNode;
                     rnode.backtraceScore = bestScore;
                 }
                 else {
@@ -199,7 +185,7 @@ class TokenLattice {
         if (prev === null) {
             return [];
         }
-        const node = prev.clone();
+        let node = prev.clone();
         while (node.prev !== null) {
             results.push(node.clone());
             const n = node.clone();
@@ -215,7 +201,7 @@ class TokenLattice {
 
     tokens() {
         const nodes = this.viterbi();
-        return nodes.map(this.piece);
+        return nodes.map(x => this.piece(x));
     }
 }
 
