@@ -7,17 +7,87 @@ class Tokenizer {
         this.vocab = vocab;
         this.normalizer = normalizer;
         this.decoder = decoder;
-        this.vocabIndex = {};
-        this.vocab.forEach((token, index) => {
-            this.vocabIndex[String(token[0])] = index;
-        });
+        this.vocabIndex = new Map(vocab.map((x, i) => [this.normalize(x), i]));
         this.starts = {};
     }
+    preprocess(text) {
+        return " " + text + "</s>";
+    }
+    normalize(text) {
+        return text.replace(/\s+/g, this.decoder.replacement);
+    }
+    denormalize(text) {
+        return text.replaceAll(this.decoder.replacement, " ");
+    }
+    getStarts(start) {
+        if (start.length <= 0) {
+            return this.vocab;
+        }
+        if (this.starts[start]) {
+            return this.starts[start];
+        }
+        const parentTokens = this.getStarts(start.slice(0, -1));
+        const starts = [];
+        parentTokens.forEach(token => {
+            if (token.startsWith(start)) {
+                starts.push(token);
+            }
+        });
+        this.starts[start] = starts;
+        return starts;
+    }
+    tokenize(normalized) {
+        let b = 0;
+        let e = normalized.length;
+        let p = 0;
+        let prevToken = null;
+        const tokens = [];
+        while (p < e) {
+            const maybeToken = normalized.slice(b, p);
+            if (maybeToken.length == 0) {
+                p++;
+                continue;
+            }
+            const starts = this.getStarts(maybeToken);
+            if (starts.length == 0) {
+                if (prevToken) {
+                    tokens.push(prevToken);
+                    prevToken = null;
+                    b = p - 1;
+                }
+                else {
+                    throw new Error("No token found for " + maybeToken);
+                }
+            } else if (starts.length == 1) {
+                const start = starts[0];
+                if (start.length == maybeToken.length) {
+                    tokens.push(starts[0]);
+                    prevToken = null;
+                    b = p;
+                    p++;
+                }
+                else {
+                    p++;
+                }
+            } else {
+                prevToken = maybeToken;
+                p++;
+            }
+        }
+        const lastToken = normalized.slice(b);
+        if (lastToken.length > 0) {
+            tokens.push(lastToken);
+        }
+        return tokens.map(x => this.vocabIndex.get(x));
+    }
     encode(text) {
-        return text.split(" ");
+        const pp = this.preprocess(text);
+        const normalized = this.normalize(pp);
+        const tokenized = this.tokenize(normalized);
+        return tokenized;
     }
     decode(tokens) {
-        return tokens.join(" ");
+        return this.denormalize(tokens.map(x => this.vocab[x]).join("")).slice(1).replace("</s>", "");
     }
 }
 
@@ -33,6 +103,6 @@ async function loadTokenizer(url) {
     const response = await fetch(url);
     const jtokenizer = await response.json();
     console.log(jtokenizer);
-    return new Tokenizer(jtokenizer.model.vocab, loadNormalizer(jtokenizer.normalizer), jtokenizer.decoder);
+    return new Tokenizer(jtokenizer.model.vocab.map(x => x[0]), loadNormalizer(jtokenizer.normalizer), jtokenizer.decoder);
 }
 

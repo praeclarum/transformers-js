@@ -17,6 +17,8 @@
                 <th>Test</th>
                 <th>Text</th>
                 <th>Tokens</th>
+                <th>Token Texts</th>
+                <th>Encoded Token Texts</th>
                 <th>Encoded Tokens</th>
                 <th>Decoded Text</th>
             </tr>
@@ -44,12 +46,32 @@
             for (const test of tests) {
                 const expectedDecode = test[0];
                 const expectedEncode = test[1];
-                const testEncode = tokenizer.encode(expectedDecode);
-                const testDecode = tokenizer.decode(testEncode);
+                let testEncode = "";
+                try {
+                    testEncode = tokenizer.encode(expectedDecode);
+                }
+                catch (e) {
+                    testEncode = ["ERROR " + e.message];
+                }
+                let testDecode = "";
+                try {
+                    testDecode = tokenizer.decode(expectedEncode);
+                }
+                catch (e) {
+                    testDecode = "ERROR " + e.message;
+                }
                 const decodePass = testDecode === expectedDecode;
                 numDecode += 1;
                 numDecodePass += decodePass ? 1 : 0;
-                const encodePass = testEncode === expectedEncode;
+                let encodePass = testEncode.length === expectedEncode.length;
+                if (encodePass) {
+                    for (let i = 0; i < testEncode.length; i++) {
+                        if (testEncode[i] !== expectedEncode[i]) {
+                            encodePass = false;
+                            break;
+                        }
+                    }
+                }
                 numEncode += 1;
                 numEncodePass += encodePass ? 1 : 0;
                 const pass = decodePass && encodePass;
@@ -63,6 +85,8 @@
                 appendCol(pass ? 'PASS' : 'FAIL', pass);
                 appendCol(expectedDecode, true);
                 appendCol(expectedEncode.join(' '), true);
+                appendCol(expectedEncode.map(x => tokenizer.vocab[x]).join(' '), true);
+                appendCol(testEncode.map(x => tokenizer.vocab[x]).join(' '), true);
                 appendCol(testEncode.join(' '), encodePass);
                 appendCol(testDecode, decodePass);
                 $tests.appendChild($test);
