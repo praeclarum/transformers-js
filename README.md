@@ -7,7 +7,7 @@ Browser-compatible, js-only, huggingface transformer support.
 
 [https://transformers-js.praeclarum.org](https://transformers-js.praeclarum.org)
 
-This demo is a static website hosted on [Azure Static Web Sites](https://azure.microsoft.com/en-us/services/static-websites/).
+This demo is a static website hosted on [Azure Static Web Apps](https://azure.microsoft.com/en-us/services/app-service/static/).
 No code is executed on the server. Instead, the neural network is downloaded and executed in the browser.
 
 See the [Makefile](Makefile) `demo` rule to see how the demo is built.
