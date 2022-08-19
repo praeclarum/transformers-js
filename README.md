@@ -2,11 +2,12 @@
 
 [![Azure Static Web Apps CI/CD](https://github.com/praeclarum/transformers-js/actions/workflows/azure-static-web-apps-gentle-desert-0ddc8ce10.yml/badge.svg)](https://github.com/praeclarum/transformers-js/actions/workflows/azure-static-web-apps-gentle-desert-0ddc8ce10.yml)
 
-This library allows you to run huggingface transformer models directly in the browser.
-It accomplishes this by running the models using the ONNX runtime and by implementing
-its own tokenization library.
+This library enables you to run huggingface transformer models directly in the browser.
+It accomplishes this by running the models using the
+[ONNX Runtime JavaScript API](https://github.com/microsoft/onnxruntime/tree/main/js)
+and by implementing its own JavaScript-only tokenization library.
 
-At the moment, it is only compatible with T5 models, but it was designed to be expanded.
+At the moment, it is compatible with Google's T5 models, but it was designed to be expanded.
 I hope to support GPT2, Roberta, and InCoder in the future.
 
 
