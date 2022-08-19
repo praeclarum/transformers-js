@@ -3,29 +3,29 @@
 console.log("Tokenizers");
 
 class Tokenizer {
-    constructor(vocab, normalizer, decoder) {
+    constructor(vocab, normalizer, preTokenizer, decoder) {
         this.vocab = vocab;
         this.normalizer = normalizer;
+        this.preTokenizer = preTokenizer;
         this.decoder = decoder;
         this.tokenToIds = new Map(vocab.map((x, i) => [this.normalize(x[0]), i]));
         this.bosToken = this.normalize(" ");
         this.bosTokenId = this.getTokenId(this.bosToken);
         this.eosToken = "</s>";
+        this.eosTokenId = this.getTokenId(this.eosToken);
         this.unkToken = "<unk>";
+        this.unkTokenId = this.getTokenId(this.unkToken);
         this.trie = new CharTrie();
         vocab.forEach(x => this.trie.push(x[0]));
     }
     getTokenId(normalizedToken) {
         return this.tokenToIds.get(normalizedToken);
     }
-    preprocess(text) {
-        return " " + text + this.eosToken;
-    }
     normalize(text) {
-        return text.replace(/\s+/g, this.decoder.replacement);
+        return this.normalizer.normalize(text);
     }
-    denormalize(normalized) {
-        return normalized.replaceAll(this.decoder.replacement, " ");
+    preTokenize(normalized) {
+        return this.preTokenizer.preTokenize(normalized);
     }
     populateNodes(lattice) {
         const unkScore = this.minScore - 10.0;
@@ -63,21 +63,23 @@ class Tokenizer {
         return tokens.map(x => this.tokenToIds.get(x));
     }
     encode(text) {
-        const pp = this.preprocess(text);
-        const normalized = this.normalize(pp);
-        const tokenized = this.tokenize(normalized);
-        return tokenized;
+        const normalized = this.normalize(text);
+        const pre = this.preTokenize([normalized]);
+        const tokens = [];
+        for (let token of pre) {
+            const tokenized = this.tokenize(token);
+            tokens.push(...tokenized);
+        }
+        tokens.push(this.eosTokenId);
+        return tokens;
     }
-    decode(tokens) {
-        const normalized = tokens.map(x => {
-            if (x in this.vocab) {
-                return this.vocab[x][0];
-            }
-            else {
-                return '[' + x + ']';
-            }
-        }).join('');
-        return this.denormalize(normalized).slice(1);
+    decode(tokenIds) {
+        const tokens = tokenIds.map(x => {
+            return x in this.vocab ? this.vocab[x][0] : "[undefined]";
+        });
+        const decodedTokens = this.decoder.decodeChain(tokens);
+        const decoded = decodedTokens.join("");
+        return decoded;
     }
 }
 
@@ -135,8 +137,8 @@ class TokenLattice {
             this.beginNodes[i] = [];
             this.endNodes[i] = [];
         }
-        const bos = new SentenceLatticeNode(this.bosTokenId, 0, 0, 0, 0.0);
-        const eos = new SentenceLatticeNode(this.eosTokenId, 1, this.len, 0, 0.0);
+        const bos = new TokenLatticeNode(this.bosTokenId, 0, 0, 0, 0.0);
+        const eos = new TokenLatticeNode(this.eosTokenId, 1, this.len, 0, 0.0);
         this.nodes.push(bos.clone());
         this.nodes.push(eos.clone());
         this.beginNodes[this.len].push(eos);
@@ -145,7 +147,7 @@ class TokenLattice {
 
     insert(pos, length, score, tokenId) {
         const nodeId = this.nodes.length;
-        const node = new SentenceLatticeNode(tokenId, nodeId, pos, length, score);
+        const node = new TokenLatticeNode(tokenId, nodeId, pos, length, score);
         this.beginNodes[pos].push(node);
         this.endNodes[pos + length].push(node);
         this.nodes.push(node);
@@ -204,8 +206,7 @@ class TokenLattice {
         return nodes.map(x => this.piece(x));
     }
 }
-
-class SentenceLatticeNode {
+class TokenLatticeNode {
     constructor(tokenId, nodeId, pos, length, score) {
         this.tokenId = tokenId;
         this.nodeId = nodeId;
@@ -216,25 +217,98 @@ class SentenceLatticeNode {
         this.backtraceScore = 0.0;
     }
     clone() {
-        const n = new SentenceLatticeNode(this.tokenId, this.nodeId, this.pos, this.length, this.score);
+        const n = new TokenLatticeNode(this.tokenId, this.nodeId, this.pos, this.length, this.score);
         n.prev = this.prev;
         n.backtraceScore = this.backtraceScore;
         return n;
     }
 }
 
-async function loadTokenizer(url) {
-    function loadNormalizer(jnormalizer) {
-        switch (jnormalizer.type) {
+class TokenProcessor {
+    static fromConfig(config) {
+        switch (config.type) {
+            case "Metaspace":
+                return new MetaspaceTokenProcessor(config.add_prefix_space, config.replacement, config.str_rep);
             case "Precompiled":
-                return jnormalizer;
+                return new PrecompiledTokenProcessor(config.precompiled_charsmap);
+            case 'Sequence':
+                return new SequenceTokenProcessor(config.pretokenizers.map(x => TokenProcessor.fromConfig(x)));
+            case "WhitespaceSplit":
+                return new WhitespaceSplitTokenProcessor();
             default:
-                throw new Error("Unknown normalizer type: " + jnormalizer.type);
+                throw new Error('Unknown token processor type: ' + config.type);
         }
     }
+}
+class MetaspaceTokenProcessor extends TokenProcessor {
+    constructor(add_prefix_space, replacement, str_rep) {
+        super();
+        this.addPrefixSpace = add_prefix_space;
+        this.replacement = replacement;
+        this.strRep = str_rep;
+    }
+    preTokenize(normalizedTokens) {
+        const result = [];
+        for (let token of normalizedTokens) {
+            let normalized = token.replace(" ", this.strRep);
+            if (this.addPrefixSpace && !normalized.startsWith(this.replacement)) {
+                normalized = this.strRep + normalized;
+            }
+            result.push(normalized);
+        }
+        return result;
+    }
+    decodeChain(tokens) {
+        const result = [];
+        let i = 0;
+        for (let token of tokens) {
+            let normalized = token.replace(this.replacement, " ");
+            if (this.addPrefixSpace && i == 0) {
+                normalized = normalized.substring(1);
+            }
+            result.push(normalized);
+            i++;
+        }
+        return result;
+    }
+}
+class PrecompiledTokenProcessor extends TokenProcessor {
+    constructor(charsmap) {
+        super();
+        this.charsmap = charsmap;
+    }
+    normalize(text) {
+        return text;
+    }
+}
+class SequenceTokenProcessor extends TokenProcessor {
+    constructor(tokenizers) {
+        super();
+        this.tokenizers = tokenizers;
+    }
+    preTokenize(normalizedTokens) {
+        let result = normalizedTokens;
+        for (let tokenizer of this.tokenizers) {
+            result = tokenizer.preTokenize(result);
+        }
+        return result;
+    }
+}
+class WhitespaceSplitTokenProcessor extends TokenProcessor {
+    preTokenize(normalizedTokens) {
+        const result = [];
+        for (let token of normalizedTokens) {
+            result.push(...token.split(/\s+/));
+        }
+        return result;
+    }
+}
+async function loadTokenizer(url) {
     const response = await fetch(url);
     const jtokenizer = await response.json();
-    console.log(jtokenizer);
-    return new Tokenizer(jtokenizer.model.vocab, loadNormalizer(jtokenizer.normalizer), jtokenizer.decoder);
+    const preTokenizer = TokenProcessor.fromConfig(jtokenizer.pre_tokenizer);
+    const normalizer = TokenProcessor.fromConfig(jtokenizer.normalizer);
+    const decoder = TokenProcessor.fromConfig(jtokenizer.decoder);
+    return new Tokenizer(jtokenizer.model.vocab, normalizer, preTokenizer, decoder);
 }
 
