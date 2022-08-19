@@ -1,6 +1,9 @@
 
 all: all_tests
 
+build:
+	@echo "Built!"
+
 run:
 	npx light-server -s . -p 8152 --no-reload
 
