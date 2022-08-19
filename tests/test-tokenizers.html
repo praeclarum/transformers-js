@@ -29,17 +29,17 @@
         <tbody id="tests"></tbody>
     </table>
 
-    <script src="src/tokenizers.js"></script>
+    <script src="../src/tokenizers.js"></script>
     <script type="text/javascript">
 
         const $tests = document.querySelector('#tests');
         const $summary = document.querySelector('#summary');
 
         async function main() {
-            const tokenizer = await loadTokenizer("tests/t5-base-tokenizer.json");
+            const tokenizer = await loadTokenizer("t5-base-tokenizer.json");
             console.log(tokenizer);
 
-            const tests = await (await fetch("tests/t5-base-tests.json")).json();
+            const tests = await (await fetch("t5-base-tests.json")).json();
             console.log(tests);
 
             let numEncode = 0;

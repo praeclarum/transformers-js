@@ -13,6 +13,9 @@ demo: demomodel
 	mkdir -p $(DEMODIR)
 	mkdir -p $(DEMODIR)/src
 	cp -a src/*.js $(DEMODIR)/src
+	mkdir -p $(DEMODIR)/tests
+	cp -a tests/*.html $(DEMODIR)/tests
+	cp -a tests/*.json $(DEMODIR)/tests
 	cp -a index.html $(DEMODIR)/
 	cp -a test.html $(DEMODIR)/
 	cp -a favicon.png $(DEMODIR)/favicon.ico
