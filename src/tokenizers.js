@@ -16,6 +16,8 @@ class Tokenizer {
         this.trie = new CharTrie();
         this.minScore = 1.0e6;
         vocab.forEach(x => this.minScore = Math.min(this.minScore, x[1]));
+        this.unkScore = this.minScore - 10.0;
+        vocab[unkTokenId][1] = this.unkScore;
         vocab.forEach(x => this.trie.push(x[0]));
     }
     static fromConfig(config) {
@@ -34,14 +36,12 @@ class Tokenizer {
         return this.preTokenizer.preTokenize(normalized);
     }
     populateNodes(lattice) {
-        const unkScore = this.minScore - 10.0;
         const sentence = lattice.sentence;
         const len = sentence.length;
         let beginPos = 0;
         while (beginPos < len) {
             const mblen = 1;
             let hasSingleNode = false;
-            // console.log("PREFIX SEARCH", sentence.slice(beginPos));
             const tokens = [];
             for (let token of this.trie.commonPrefixSearch(sentence.slice(beginPos))) {
                 tokens.push(token);
@@ -53,9 +53,8 @@ class Tokenizer {
                     hasSingleNode = true;
                 }
             }
-            // console.log("SEARCH RESULTS", tokens);
             if (!hasSingleNode) {
-                lattice.insert(beginPos, mblen, unkScore, this.unkTokenId);
+                lattice.insert(beginPos, mblen, this.unkScore, this.unkTokenId);
             }
             beginPos += mblen;
         }
