@@ -9,11 +9,14 @@
     <p><a href="/test">Test</a></p>
 
     <script src="src/tokenizers.js"></script>
+    <script src="src/transformers.js"></script>
     <script type="text/javascript">
 
-        const $tests = document.querySelector('#tests');
+        async function main() {
+            const tokenizer = await AutoTokenizer.fromPretrained("t5-small", models_path="/models");
+        }
 
-        $tests.appendChild(document.createTextNode('Hello tests'));
+        main();
 
     </script>
 </body>

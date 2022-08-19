@@ -1,5 +1,13 @@
 "use strict";
 
+
+class AutoTokenizer {
+    static async fromPretrained(modelId, modelsPath) {
+        throw new Error("Not implemented yet.");
+    }
+}
+
+
 class Tokenizer {
     constructor(vocab, unkTokenId, normalizer, preTokenizer, decoder) {
         this.vocab = vocab;

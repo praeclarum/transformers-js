@@ -33,5 +33,5 @@ Or you can run it from Python:
 ```python
 from convert_model import t5_to_onnx
 
-onnx_model = t5_to_onnx(model_id, output_dir, quantized)
+onnx_model = t5_to_onnx("praeclarum/cuneiform", output_dir="./models", quantized=True)
 ```
