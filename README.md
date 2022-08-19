@@ -86,3 +86,7 @@ from convert_model import t5_to_onnx
 
 onnx_model = t5_to_onnx("t5-small", output_dir="./models", quantized=True)
 ```
+
+**Developer Note:** The model conversion script is a thin wrapper over the amazing
+[fastT5](https://github.com/Ki6an/fastT5) library by @Ki6an.
+The wrapper exists because I hope to support more model types in the future.
