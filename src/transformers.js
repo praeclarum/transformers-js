@@ -1,7 +1,9 @@
 class PretrainedModel {
     static async loadSession(modelSource) {
         console.log('Loading session from', modelSource);
-        const session = await ort.InferenceSession.create(modelSource);
+        const response = await fetch(modelSource, { cache: 'force-cache' });
+        const modelBuffer = await response.arrayBuffer();
+        const session = await ort.InferenceSession.create(modelBuffer);
         console.log('Session loaded from', modelSource);
         return session;
     }
