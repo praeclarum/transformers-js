@@ -81,7 +81,7 @@
             tokenizer = await AutoTokenizer.fromPretrained("t5-small", "/models");
             console.log(tokenizer);
             model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models", async function(progress) {
-                $status.innerText = `Loading neural network... ${Math.round(progress * 100)}%`;
+                $status.innerText = `Loading the neural network... ${Math.round(progress * 100)}%`;
                 await delay(100); // Give the UI a chance to update.
             });
             console.log(model);
