@@ -1,14 +1,16 @@
+DEMODIR=dist
 
 all: all_tests
 
-build:
-	rm -rf dist
-	mkdir -p dist
-	mkdir -p dist/src
-	cp -a src/*.js dist/src
-	cp -a index.html dist/
-	cp -a test.html dist/
-	@echo "Built!"
+demo:
+	rm -rf $(DEMODIR)
+	mkdir -p $(DEMODIR)
+	mkdir -p $(DEMODIR)/src
+	cp -a src/*.js $(DEMODIR)/src
+	cp -a index.html $(DEMODIR)/
+	cp -a test.html $(DEMODIR)/
+	cp -a favicon.png $(DEMODIR)/favicon.ico
+	@echo "Built Demo!"
 
 run:
 	npx light-server -s . -p 8152 --no-reload
