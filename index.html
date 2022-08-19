@@ -44,16 +44,22 @@
         let tokenizer = null;
         let model = null;
 
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         async function translateInput(e) {
             if (e) e.preventDefault();
             if (tokenizer !== null && model !== null) {
-                console.log("TRANSLATE");
+                $status.innerText = "Translating...";
+                await delay(100); // Give the UI a chance to update.
                 const input = $prefix.value.trim() + " " + $input.value.trim();
                 const inputTokenIds = tokenizer.encode(input);
                 $inputDebug.innerText = inputTokenIds.join(" ");
                 const outputTokens = await model.generate(inputTokenIds, 512);
                 $outputDebug.innerText = outputTokens.join(" ");
                 $output.value = tokenizer.decode(outputTokens, true).trim();
+                $status.innerText = "Ready";
             }
             else {
                 $inputDebug.innerText = "Loading...";
@@ -67,6 +73,7 @@
             console.log(tokenizer);
             model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models", async function(progress) {
                 $status.innerText = `Loading neural network... ${Math.round(progress * 100)}%`;
+                await delay(100); // Give the UI a chance to update.
             });
             console.log(model);
             $status.innerText = `Ready`;
