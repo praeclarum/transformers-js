@@ -1,3 +1,4 @@
-transformers
-tokenizers
 fastt5
+six
+tokenizers
+transformers
