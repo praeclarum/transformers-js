@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, shutil
 from transformers import AutoTokenizer
 
 
@@ -8,8 +8,7 @@ def t5_to_onnx(model_id, output_dir, quantized):
     return model
 
 
-def onnx_generate(input, model_id, onnx_model):
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+def onnx_generate(input, onnx_model, tokenizer):
     token = tokenizer(input, return_tensors='pt')
     tokens = onnx_model.generate(input_ids=token['input_ids'],
                                  attention_mask=token['attention_mask'],
@@ -33,11 +32,21 @@ if __name__ == '__main__':
         quantized = args[3].lower() == "true" or args[3].lower() == "1" or args[3].lower() == "yes"
     if len(args) > 4:
         test_input = args[4]
-    print(f"model_id: {model_id}")
-    print(f"output_dir: {output_dir}")
-    print(f"quantized: {quantized}")
+    model_name = model_id.split("/")[-1]
 
-    onnx_model = t5_to_onnx(model_id, output_dir, quantized)
-    test_output = onnx_generate(test_input, model_id, onnx_model)
-    print(f"> {test_input}")
-    print(f"< {test_output}")
+    print(f"model_name: {model_name}")
+    print(f"  model_id: {model_id}")
+    print(f"output_dir: {output_dir}")
+    print(f" quantized: {quantized}")
+
+    build_dir = os.path.join(output_dir, f"build-{model_name}")
+    os.makedirs(build_dir, exist_ok=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer.save_pretrained(build_dir)
+    shutil.copyfile(os.path.join(build_dir, "tokenizer.json"), os.path.join(output_dir, f"{model_name}-tokenizer.json"))
+
+    # onnx_model = t5_to_onnx(model_id, output_dir, quantized)
+    # test_output = onnx_generate(test_input, onnx_model, tokenizer)
+    # print(f"> {test_input}")
+    # print(f"< {test_output}")
