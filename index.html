@@ -4,7 +4,7 @@
     <title>transformers-js</title>
     <style>
         textarea { padding: 0.25em 0.25em; }
-        #input { font-family: Papyrus, sans-serif; font-size: 32px; margin-bottom: 1em; }
+        #input { font-family: Papyrus, sans-serif; font-size: 32px; }
         #output { font-family: monospace; font-size: 32px; }
     </style>
 </head>
@@ -16,35 +16,45 @@
     </nav>
 
     <form style="width:50em;display:block;" onsubmit="translateInput(event)">
-        <h2><label for="prefix">Prompt:</label></h2>
+        <h3><label for="prefix">Input</label></h3>
         <p><input type="text" id="prefix" value="translate English to French:" style="width: 100%;" /></p>
         <textarea id="input" name="input" rows="3" style="width: 100%;" oninput="translateInput(event)">The universe is a dark forest.</textarea>
-        <h2><label for="output">Output:</label></h2>
+        <p id="inputDebug"></p>
+        <h3><label for="output">Output</label></h3>
         <textarea id="output" name="output" rows="4" style="width: 100%;">The universe is a dark forest.</textarea>
-        <p id="debug"></p>
+        <p id="outputDebug"></p>
         <p><input type="submit" value="Generate"></p>
     </form>
 
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.js"></script>
     <script src="src/tokenizers.js"></script>
     <script src="src/transformers.js"></script>
     <script type="text/javascript">
 
         const $input = document.getElementById("input");
         const $output = document.getElementById("output");
-        const $debug = document.getElementById("debug");
+        const $inputDebug = document.getElementById("inputDebug");
+        const $outputDebug = document.getElementById("outputDebug");
 
         let tokenizer = null;
         let model = null;
 
-        function translateInput(e) {
+        async function translateInput(e) {
             if (e) e.preventDefault();
-            if (!tokenizer) return;
-            if (!model) return;
-            const input = $input.value;
-            const inputTokens = tokenizer.encode(input);
-            console.log("TRANSLATE", inputTokens);
-            $debug.innerText = inputTokens.join(" ");
-            $output.value = tokenizer.decode(inputTokens);
+            if (tokenizer !== null && model !== null) {
+                console.log("TRANSLATE");
+                const input = $input.value;
+                const inputTokens = tokenizer.encode(input);
+                $inputDebug.innerText = inputTokens.join(" ");
+                const outputTokens = await model.generate(inputTokens);
+                $outputDebug.innerText = outputTokens.join(" ");
+                $output.value = tokenizer.decode(outputTokens);
+            }
+            else {
+                $inputDebug.innerText = "Loading...";
+                $outputDebug.innerText = "Loading...";
+                $output.value = "";
+            }
         }
 
         async function main() {
