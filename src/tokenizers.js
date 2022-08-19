@@ -14,8 +14,11 @@ class AutoTokenizer {
 
 
 class Tokenizer {
-    constructor(vocab, unkTokenId, normalizer, preTokenizer, decoder) {
+    constructor(vocab, unkTokenId, specialTokens, normalizer, preTokenizer, decoder) {
         this.vocab = vocab;
+        this.unkTokenId = unkTokenId;
+        this.specialTokens = specialTokens;
+        this.specialTokenIds = new Map(specialTokens.map(x => [x.id, x]));
         this.normalizer = normalizer;
         this.preTokenizer = preTokenizer;
         this.decoder = decoder;
@@ -24,7 +27,6 @@ class Tokenizer {
         this.bosTokenId = this.getTokenId(this.bosToken);
         this.eosToken = "</s>";
         this.eosTokenId = this.getTokenId(this.eosToken);
-        this.unkTokenId = unkTokenId;
         this.unkToken = this.vocab[this.unkTokenId][0];
         this.trie = new CharTrie();
         this.minScore = 1.0e6;
@@ -37,7 +39,7 @@ class Tokenizer {
         const preTokenizer = TokenProcessor.fromConfig(config.pre_tokenizer);
         const normalizer = TokenProcessor.fromConfig(config.normalizer);
         const decoder = TokenProcessor.fromConfig(config.decoder);
-        return new Tokenizer(config.model.vocab, config.model.unk_id, normalizer, preTokenizer, decoder);
+        return new Tokenizer(config.model.vocab, config.model.unk_id, config.added_tokens, normalizer, preTokenizer, decoder);
     }
     getTokenId(normalizedToken) {
         return this.tokenToIds.get(normalizedToken);
@@ -90,10 +92,18 @@ class Tokenizer {
         tokens.push(this.eosTokenId);
         return tokens;
     }
-    decode(tokenIds) {
+    decode(tokenIds, skipSpecialTokens) {
         const tokens = tokenIds.map(x => {
-            if (x == this.unkTokenId) return this.unkToken + " ";
-            return x in this.vocab ? this.vocab[x][0] : "[undefined]";
+            if (this.specialTokenIds.get(x) !== undefined && skipSpecialTokens) {
+                return "";
+            }
+            else if (x == this.unkTokenId) {
+                return this.unkToken + " ";
+            } else if (x in this.vocab) {
+                return this.vocab[x][0];
+            } else {
+                return `[${x}]`;
+            }
         });
         const decodedTokens = this.decoder.decodeChain(tokens);
         const decoded = decodedTokens.join("");

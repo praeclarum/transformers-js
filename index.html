@@ -21,7 +21,7 @@
         <textarea id="input" name="input" rows="3" style="width: 100%;" oninput="translateInput(event)">The universe is a dark forest.</textarea>
         <p id="inputDebug"></p>
         <h3><label for="output">Output</label></h3>
-        <textarea id="output" name="output" rows="4" style="width: 100%;">The universe is a dark forest.</textarea>
+        <textarea id="output" name="output" rows="4" style="width: 100%;"></textarea>
         <p id="outputDebug"></p>
         <p><input type="submit" value="Generate"></p>
     </form>
@@ -46,11 +46,10 @@
                 console.log("TRANSLATE");
                 const input = $prefix.value.trim() + " " + $input.value.trim();
                 const inputTokenIds = tokenizer.encode(input);
-                const initialOutputTokenIds = tokenizer.encode(" ");
                 $inputDebug.innerText = inputTokenIds.join(" ");
                 const outputTokens = await model.generate(inputTokenIds, 512);
                 $outputDebug.innerText = outputTokens.join(" ");
-                $output.value = tokenizer.decode(outputTokens);
+                $output.value = tokenizer.decode(outputTokens, true).trim();
             }
             else {
                 $inputDebug.innerText = "Loading...";
