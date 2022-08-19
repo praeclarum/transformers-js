@@ -2,6 +2,12 @@
 all: all_tests
 
 build:
+	rm -rf dist
+	mkdir -p dist
+	mkdir -p dist/src
+	cp -a src/*.js dist/src
+	cp -a index.html dist/
+	cp -a test.html dist/
 	@echo "Built!"
 
 run:
