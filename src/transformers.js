@@ -1,54 +1,53 @@
 class PretrainedModel {
-
+    static async loadSession(modelSource) {
+        console.log('Loading session from', modelSource);
+        const session = await ort.InferenceSession.create(modelSource);
+        console.log('Session loaded from', modelSource);
+        return session;
+    }
 }
 
 
-class AutoModelForSeq2SeqLM {
-    constructor(encoderSource, initDecoderSource, decoderSource) {
-        this.encoderSource = encoderSource;
-        this.initDecoderSource = initDecoderSource;
-        this.decoderSource = decoderSource;
-        this.encoderSession = null;
-        this.initDecoderSession = null;
-        this.decoderSession = null;
+class AutoModelForSeq2SeqLM extends PretrainedModel {
+    constructor(encoderSession, initDecoderSession, decoderSession) {
+        super();
+        this.encoderSession = encoderSession;
+        this.initDecoderSession = initDecoderSession;
+        this.decoderSession = decoderSession;
     }
-    static async fromPretrained(modelId, modelsPath) {
+
+    static async fromPretrained(modelId, modelsPath, progressAsyncCallback) {
+        // TODO: This should load different model types. Right now it's hardcoded to T5.
+
         const modelIdParts = modelId.split('/');
         const modelName = modelIdParts[modelIdParts.length - 1];
         const suffix = "-quantized";
+        const encoderUrl = `${modelsPath}/${modelName}-encoder${suffix}.onnx`;
         const initDecoderUrl = `${modelsPath}/${modelName}-init-decoder${suffix}.onnx`;
         const decoderUrl = `${modelsPath}/${modelName}-decoder${suffix}.onnx`;
-        const encoderUrl = `${modelsPath}/${modelName}-encoder${suffix}.onnx`;
-        return new T5ForConditionalGeneration(encoderUrl, initDecoderUrl, decoderUrl);
-    }
-    async ensureLoaded() {
-        if (this.encoderSession === null && this.encoderSource) {
-            console.log('Loading encoder...');
-            this.encoderSession = await ort.InferenceSession.create(this.encoderSource);
-        }
-        if (this.initDecoderSession === null && this.initDecoderSource) {
-            console.log('Loading init decoder...');
-            this.initDecoderSession = await ort.InferenceSession.create(this.initDecoderSource);
-        }
-        if (this.decoderSession === null && this.decoderSource) {
-            console.log('Loading decoder...');
-            this.decoderSession = await ort.InferenceSession.create(this.decoderSource);
-            console.log('Done loading decoder.');
-        }
-    }
-}
 
-class Seq2SeqLMOutput {
-    constructor(logits, pastKeyValues, encoderOutputs) {
-        this.logits = logits;
-        this.pastKeyValues = pastKeyValues;
-        this.encoderOutputs = encoderOutputs;
-    }
-}
+        const progressMax = 4;
+        let progress = 0;
+        async function incrementProgress() {
+            progress++;
+            const p = progress / progressMax;
+            console.log(`Loading model ${modelId}... ${p * 100}%`);
+            if (progressAsyncCallback) {
+                await progressAsyncCallback(p);
+            }
+        }
+        await incrementProgress();
+        const encoderSessionPromise = this.loadSession(encoderUrl);
+        const initDecoderSessionPromise = this.loadSession(initDecoderUrl);
+        const decoderSessionPromise = this.loadSession(decoderUrl);
+        const encoderSession = await encoderSessionPromise;
+        await incrementProgress();
+        const initDecoderSession = await initDecoderSessionPromise;
+        await incrementProgress();
+        const decoderSession = await decoderSessionPromise;
+        await incrementProgress();
 
-class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
-    constructor(encoderSource, initDecoderSource, decoderSource) {
-        super(encoderSource, initDecoderSource, decoderSource);
+        return new T5ForConditionalGeneration(encoderSession, initDecoderSession, decoderSession);
     }
 
     async generate(inputTokenIds, maxLength) {
@@ -64,7 +63,7 @@ class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
             let output = await this.forward(inputTokenIds, outputTokenIds, encoderOutputs, pastKeyValues);
             pastKeyValues = output.pastKeyValues;
             encoderOutputs = output.encoderOutputs;
-            let newTokenId = this.sample(output.logits);
+            let newTokenId = this.sampleGreedily(output.logits);
             outputTokenIds.push(newTokenId);
             numOutputTokens++;
             if (newTokenId === endOfDecoderTokenId) {
@@ -74,11 +73,10 @@ class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
         return outputTokenIds;
     }
 
-    sample(logits) {
+    sampleGreedily(logits) {
         let shape = logits.dims;
         let [batchSize, seqLength, vocabSize] = shape;
         let n = batchSize * seqLength * vocabSize;
-        let p = Array(vocabSize);
         let startIndex = n - vocabSize;
         let argmaxi = 0;
         let argmax = logits.data[startIndex + argmaxi];
@@ -91,10 +89,14 @@ class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
         }
         return argmaxi;
     }
+}
+
+class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
+    constructor(encoderSession, initDecoderSession, decoderSession) {
+        super(encoderSession, initDecoderSession, decoderSession);
+    }
 
     async forward(inputIds, decoderInputIds, encoderOutputs, pastKeyValues) {
-        await this.ensureLoaded();
-
         const inputIdsTensor = new ort.Tensor("int64", new BigInt64Array(inputIds.map(x => BigInt(x))), [1, inputIds.length]);
         const encoderAttentionMaskTensor = new ort.Tensor("int64", new BigInt64Array(inputIds.length).fill(1n), [1, inputIds.length]);
         if (encoderOutputs === null) {
@@ -149,4 +151,12 @@ class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
     }
 }
 
+
+class Seq2SeqLMOutput {
+    constructor(logits, pastKeyValues, encoderOutputs) {
+        this.logits = logits;
+        this.pastKeyValues = pastKeyValues;
+        this.encoderOutputs = encoderOutputs;
+    }
+}
 

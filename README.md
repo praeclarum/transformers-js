@@ -2,10 +2,24 @@
 
 Browser-compatible, js-only, huggingface transformer support.
 
+
+## Live Demo
+
+[https://transformers-js.praeclarum.org](https://transformers-js.praeclarum.org)
+
+This demo is a static website hosted on [Azure Static Web Sites](https://azure.microsoft.com/en-us/services/static-websites/).
+No code is executed on the server. Instead, the neural network is downloaded and executed in the browser.
+
+See the [Makefile](Makefile) `demo` rule to see how the demo is built.
+
+
+## Usage
+
 ```js
 const tokenizer = await AutoTokenizer.fromPretrained("t5-small", models_path="/models");
 const model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", models_path="/models");
 ```
+
 
 ## Library
 

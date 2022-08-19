@@ -15,7 +15,10 @@
         <p><a href="/test">Test Tokenizers</a></p>
     </nav>
 
+    <h2>Translation Demo</h2>
+    <p>This demo uses the t5-small neural network.</p>
     <form style="width:50em;display:block;" onsubmit="translateInput(event)">
+        <p><b>Status</b> <span id="status">Loading...</span></p>
         <h3><label for="prefix">Input</label></h3>
         <p><input type="text" id="prefix" name="prefix" value="translate English to French:" style="width: 100%;" /></p>
         <textarea id="input" name="input" rows="3" style="width: 100%;" oninput="translateInput(event)">The universe is a dark forest.</textarea>
@@ -31,6 +34,7 @@
     <script src="src/transformers.js"></script>
     <script type="text/javascript">
 
+        const $status = document.getElementById("status");
         const $prefix = document.getElementById("prefix");
         const $input = document.getElementById("input");
         const $output = document.getElementById("output");
@@ -61,8 +65,11 @@
         async function main() {
             tokenizer = await AutoTokenizer.fromPretrained("t5-small", "/models");
             console.log(tokenizer);
-            model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models");
+            model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models", async function(progress) {
+                $status.innerText = `Loading neural network... ${Math.round(progress * 100)}%`;
+            });
             console.log(model);
+            $status.innerText = `Ready`;
             translateInput(null);
         }
 
