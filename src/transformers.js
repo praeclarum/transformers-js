@@ -50,7 +50,7 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         return new T5ForConditionalGeneration(encoderSession, initDecoderSession, decoderSession);
     }
 
-    async generate(inputTokenIds, maxLength) {
+    async generate(inputTokenIds, maxLength, progressAsyncCallback) {
         // attention_mask=token['attention_mask'], num_beams=2
         const startOfDecoderTokenId = 0;
         const endOfDecoderTokenId = 1;
@@ -59,6 +59,11 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         let outputTokenIds = [startOfDecoderTokenId];
         let numOutputTokens = 1;
         const maxOutputTokens = numOutputTokens + maxLength;
+        async function progress() {
+            if (progressAsyncCallback) {
+                await progressAsyncCallback(outputTokenIds);
+            }
+        }
         while (numOutputTokens < maxOutputTokens) {
             let output = await this.forward(inputTokenIds, outputTokenIds, encoderOutputs, pastKeyValues);
             pastKeyValues = output.pastKeyValues;
@@ -66,6 +71,7 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
             let newTokenId = this.sampleGreedily(output.logits);
             outputTokenIds.push(newTokenId);
             numOutputTokens++;
+            await progress(outputTokenIds);
             if (newTokenId === endOfDecoderTokenId) {
                 break;
             }

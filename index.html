@@ -61,13 +61,19 @@
             if (e) e.preventDefault();
             if (tokenizer !== null && model !== null) {
                 $status.innerText = "Translating...";
-                await delay(100); // Give the UI a chance to update.
+                await delay(33); // Give the UI a chance to update.
                 const input = $prefix.value.trim() + " " + $input.value.trim();
                 const inputTokenIds = tokenizer.encode(input);
                 $inputDebug.innerText = inputTokenIds.join(" ");
-                const outputTokens = await model.generate(inputTokenIds, 140);
-                $outputDebug.innerText = outputTokens.join(" ");
-                $output.value = tokenizer.decode(outputTokens, true).trim();
+                async function showOutput(outputTokenIds) {
+                    const output = tokenizer.decode(outputTokenIds, true).trim();
+                    $output.value = output;
+                    $outputDebug.innerText = outputTokenIds.join(" ");
+                    await delay(33); // Give the UI a chance to update.
+                    return true;
+                }
+                const finalOutputTokenIds = await model.generate(inputTokenIds, 140, showOutput);
+                await showOutput(finalOutputTokenIds);
                 $status.innerText = "Ready";
             }
             else {
