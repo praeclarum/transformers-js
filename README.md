@@ -1,5 +1,7 @@
 # Huggingface Transformers Running in the Browser
 
+[![Azure Static Web Apps CI/CD](https://github.com/praeclarum/transformers-js/actions/workflows/azure-static-web-apps-gentle-desert-0ddc8ce10.yml/badge.svg)](https://github.com/praeclarum/transformers-js/actions/workflows/azure-static-web-apps-gentle-desert-0ddc8ce10.yml)
+
 This library allows you to run huggingface transformer models directly in the browser.
 It accomplishes this by running the models using the ONNX runtime and by implementing
 its own tokenization library.
