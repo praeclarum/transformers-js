@@ -1,6 +1,11 @@
 # Huggingface Transformers Running in the Browser
 
-Browser-compatible, js-only, huggingface transformer support.
+This library allows you to run huggingface transformer models directly in the browser.
+It accomplishes this by running the models using the ONNX runtime and by implementing
+its own tokenization library.
+
+At the moment, it is only compatible with T5 models, but it was designed to be expanded.
+I hope to support GPT2, Roberta, and InCoder in the future.
 
 
 ## Live Demo
@@ -15,7 +20,7 @@ See the [Makefile](Makefile) `demo` rule to see how the demo is built.
 
 ## Usage
 
-This usage example shows how to use the library to load the T5 model to translate from English to French.
+This example shows how to use the library to load the T5 neural network to translate from English to French.
 
 ```js
 // Load the tokenizer and model.
@@ -28,6 +33,12 @@ const inputTokenIds = tokenizer.encode("translate English to French: " + english
 const outputTokenIds = await model.generate(inputTokenIds, 140);
 const french = tokenizer.decode(outputTokenIds, true);
 console.log(french); // "Bonjour monde!"
+```
+
+To run this demo, you need to have converted the model to ONNX format using the [Model Conversion Tool](#model-converter).
+
+```bash
+python3 tools/convert_model.py t5-small models
 ```
 
 
