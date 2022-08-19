@@ -1,12 +1,28 @@
 <html>
 
 <head>
-    <title>tokenizers-web</title>
+    <title>transformers-js</title>
+    <style>
+        textarea { padding: 0.25em 0.25em; }
+        #input { font-family: Papyrus, sans-serif; font-size: 32px; margin-bottom: 1em; }
+        #output { font-family: monospace; font-size: 32px; }
+    </style>
 </head>
 
 <body>
-    <h1>tokenizers-web</h1>
-    <p><a href="/test">Test</a></p>
+    <h1>transformers-js</h1>
+    <nav>
+        <p><a href="/test">Test Tokenizers</a></p>
+    </nav>
+
+    <form style="width:50em;display:block;">
+        <p><label for="prefix">Prompt:</label></p>
+        <p><input type="text" id="prefix" value="translate English to French:" style="width: 100%;" /></p>
+        <textarea id="input" name="input" rows="3" style="width: 100%;">The universe is a dark forest.</textarea>
+        <p><label for="output">Output:</label></p>
+        <textarea id="output" name="output" rows="3" style="width: 100%;">The universe is a dark forest.</textarea>
+        <p><input type="submit" value="Generate"></p>
+    </form>
 
     <script src="src/tokenizers.js"></script>
     <script src="src/transformers.js"></script>
