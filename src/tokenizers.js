@@ -14,6 +14,8 @@ class Tokenizer {
         this.unkTokenId = unkTokenId;
         this.unkToken = this.vocab[this.unkTokenId][0];
         this.trie = new CharTrie();
+        this.minScore = 1.0e6;
+        vocab.forEach(x => this.minScore = Math.min(this.minScore, x[1]));
         vocab.forEach(x => this.trie.push(x[0]));
     }
     static fromConfig(config) {
@@ -77,6 +79,7 @@ class Tokenizer {
     }
     decode(tokenIds) {
         const tokens = tokenIds.map(x => {
+            if (x == this.unkTokenId) return this.unkToken + " ";
             return x in this.vocab ? this.vocab[x][0] : "[undefined]";
         });
         const decodedTokens = this.decoder.decodeChain(tokens);
