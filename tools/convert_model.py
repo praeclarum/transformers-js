@@ -39,14 +39,20 @@ if __name__ == '__main__':
     print(f"output_dir: {output_dir}")
     print(f" quantized: {quantized}")
 
-    build_dir = os.path.join(output_dir, f"build-{model_name}")
+    os.makedirs(output_dir, exist_ok=True)
+
+    build_dir = os.path.abspath(f"buildmodel")
     os.makedirs(build_dir, exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.save_pretrained(build_dir)
     shutil.copyfile(os.path.join(build_dir, "tokenizer.json"), os.path.join(output_dir, f"{model_name}-tokenizer.json"))
 
-    onnx_model = t5_to_onnx(model_id, output_dir, quantized)
+    onnx_model = t5_to_onnx(model_id, build_dir, quantized)
+    msuffix = "-quantized" if quantized else ""
+    for session in ["encoder", "init-decoder", "decoder"]:
+        shutil.copyfile(os.path.join(build_dir, f"{model_name}-{session}{msuffix}.onnx"), os.path.join(output_dir, f"{model_name}-{session}{msuffix}.onnx"))
+
     test_output = onnx_generate(test_input, onnx_model, tokenizer)
     print(f"> {test_input}")
     print(f"< {test_output}")
