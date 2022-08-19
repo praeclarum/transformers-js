@@ -15,12 +15,13 @@
         <p><a href="/test">Test Tokenizers</a></p>
     </nav>
 
-    <form style="width:50em;display:block;">
-        <p><label for="prefix">Prompt:</label></p>
+    <form style="width:50em;display:block;" onsubmit="translateInput(event)">
+        <h2><label for="prefix">Prompt:</label></h2>
         <p><input type="text" id="prefix" value="translate English to French:" style="width: 100%;" /></p>
-        <textarea id="input" name="input" rows="3" style="width: 100%;">The universe is a dark forest.</textarea>
-        <p><label for="output">Output:</label></p>
-        <textarea id="output" name="output" rows="3" style="width: 100%;">The universe is a dark forest.</textarea>
+        <textarea id="input" name="input" rows="3" style="width: 100%;" oninput="translateInput(event)">The universe is a dark forest.</textarea>
+        <h2><label for="output">Output:</label></h2>
+        <textarea id="output" name="output" rows="4" style="width: 100%;">The universe is a dark forest.</textarea>
+        <p id="debug"></p>
         <p><input type="submit" value="Generate"></p>
     </form>
 
@@ -28,10 +29,30 @@
     <script src="src/transformers.js"></script>
     <script type="text/javascript">
 
+        const $input = document.getElementById("input");
+        const $output = document.getElementById("output");
+        const $debug = document.getElementById("debug");
+
+        let tokenizer = null;
+        let model = null;
+
+        function translateInput(e) {
+            if (e) e.preventDefault();
+            if (!tokenizer) return;
+            if (!model) return;
+            const input = $input.value;
+            const inputTokens = tokenizer.encode(input);
+            console.log("TRANSLATE", inputTokens);
+            $debug.innerText = inputTokens.join(" ");
+            $output.value = tokenizer.decode(inputTokens);
+        }
+
         async function main() {
-            const tokenizer = await AutoTokenizer.fromPretrained("t5-small", models_path="/models");
+            tokenizer = await AutoTokenizer.fromPretrained("t5-small", "/models");
             console.log(tokenizer);
-            // const model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", models_path="/models");
+            model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models");
+            console.log(model);
+            translateInput(null);
         }
 
         main();

@@ -79,6 +79,7 @@ class Tokenizer {
         return tokenIds;
     }
     encode(text) {
+        if (text === null || text === undefined || text.length === 0) return [this.eosTokenId];
         const normalized = this.normalize(text);
         const pre = this.preTokenize([normalized]);
         const tokens = [];
@@ -264,7 +265,7 @@ class MetaspaceTokenProcessor extends TokenProcessor {
         super();
         this.addPrefixSpace = add_prefix_space;
         this.replacement = replacement;
-        this.strRep = str_rep;
+        this.strRep = str_rep || this.replacement;
     }
     preTokenize(normalizedTokens) {
         const result = [];
@@ -282,7 +283,7 @@ class MetaspaceTokenProcessor extends TokenProcessor {
         let i = 0;
         for (let token of tokens) {
             let normalized = token.replace(this.replacement, " ");
-            if (this.addPrefixSpace && i == 0) {
+            if (this.addPrefixSpace && i == 0 && normalized.startsWith(" ")) {
                 normalized = normalized.substring(1);
             }
             result.push(normalized);

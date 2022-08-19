@@ -46,7 +46,7 @@ if __name__ == '__main__':
     tokenizer.save_pretrained(build_dir)
     shutil.copyfile(os.path.join(build_dir, "tokenizer.json"), os.path.join(output_dir, f"{model_name}-tokenizer.json"))
 
-    # onnx_model = t5_to_onnx(model_id, output_dir, quantized)
-    # test_output = onnx_generate(test_input, onnx_model, tokenizer)
-    # print(f"> {test_input}")
-    # print(f"< {test_output}")
+    onnx_model = t5_to_onnx(model_id, output_dir, quantized)
+    test_output = onnx_generate(test_input, onnx_model, tokenizer)
+    print(f"> {test_input}")
+    print(f"< {test_output}")
