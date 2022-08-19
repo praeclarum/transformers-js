@@ -14,6 +14,7 @@
 
         async function main() {
             const tokenizer = await AutoTokenizer.fromPretrained("t5-small", models_path="/models");
+            const model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", models_path="/models");
         }
 
         main();

@@ -2,11 +2,20 @@
 
 Browser-compatible, js-only, huggingface transformer support.
 
+```js
+const tokenizer = await AutoTokenizer.fromPretrained("t5-small", models_path="/models");
+const model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", models_path="/models");
+```
+
 ## Library
 
 ### Tokenizers
 
 [tokenizers.js](src/tokenizers.js)
+
+### Transformers
+
+[transformers.js](src/transformers.js)
 
 ### Transformers
 
@@ -33,5 +42,5 @@ Or you can run it from Python:
 ```python
 from convert_model import t5_to_onnx
 
-onnx_model = t5_to_onnx("praeclarum/cuneiform", output_dir="./models", quantized=True)
+onnx_model = t5_to_onnx("t5-small", output_dir="./models", quantized=True)
 ```

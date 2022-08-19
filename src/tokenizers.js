@@ -3,7 +3,12 @@
 
 class AutoTokenizer {
     static async fromPretrained(modelId, modelsPath) {
-        throw new Error("Not implemented yet.");
+        const modelIdParts = modelId.split('/');
+        const modelName = modelIdParts[modelIdParts.length - 1];
+        const url = `${modelsPath}/${modelName}-tokenizer.json`;
+        const response = await fetch(url);
+        const tokenizer = Tokenizer.fromConfig(await response.json());
+        return tokenizer;
     }
 }
 
