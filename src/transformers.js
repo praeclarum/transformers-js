@@ -58,13 +58,14 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         let pastKeyValues = null;
         let outputTokenIds = [startOfDecoderTokenId];
         let numOutputTokens = 1;
+        let shouldContinue = true;
         const maxOutputTokens = numOutputTokens + maxLength;
         async function progress() {
             if (progressAsyncCallback) {
-                await progressAsyncCallback(outputTokenIds);
+                shouldContinue = await progressAsyncCallback(outputTokenIds);
             }
         }
-        while (numOutputTokens < maxOutputTokens) {
+        while (shouldContinue && numOutputTokens < maxOutputTokens) {
             let output = await this.forward(inputTokenIds, outputTokenIds, encoderOutputs, pastKeyValues);
             pastKeyValues = output.pastKeyValues;
             encoderOutputs = output.encoderOutputs;
