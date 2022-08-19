@@ -1,3 +1,4 @@
+import sys, os
 from transformers import AutoTokenizer
 
 
@@ -18,10 +19,24 @@ def onnx_generate(input, model_id, onnx_model):
 
 
 if __name__ == '__main__':
+    args = sys.argv
     model_id = "t5-small"
-    test_input = "translate English to French: The universe is a dark forest."
     output_dir = "./models"
     quantized = True
+    test_input = "translate English to French: The universe is a dark forest."
+
+    if len(args) > 1:
+        model_id = args[1]
+    if len(args) > 2:
+        output_dir = args[2]
+    if len(args) > 3:
+        quantized = args[3].lower() == "true" or args[3].lower() == "1" or args[3].lower() == "yes"
+    if len(args) > 4:
+        test_input = args[4]
+    print(f"model_id: {model_id}")
+    print(f"output_dir: {output_dir}")
+    print(f"quantized: {quantized}")
+
     onnx_model = t5_to_onnx(model_id, output_dir, quantized)
     test_output = onnx_generate(test_input, model_id, onnx_model)
     print(f"> {test_input}")
