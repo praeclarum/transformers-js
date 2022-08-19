@@ -17,7 +17,7 @@
 
     <form style="width:50em;display:block;" onsubmit="translateInput(event)">
         <h3><label for="prefix">Input</label></h3>
-        <p><input type="text" id="prefix" value="translate English to French:" style="width: 100%;" /></p>
+        <p><input type="text" id="prefix" name="prefix" value="translate English to French:" style="width: 100%;" /></p>
         <textarea id="input" name="input" rows="3" style="width: 100%;" oninput="translateInput(event)">The universe is a dark forest.</textarea>
         <p id="inputDebug"></p>
         <h3><label for="output">Output</label></h3>
@@ -31,6 +31,7 @@
     <script src="src/transformers.js"></script>
     <script type="text/javascript">
 
+        const $prefix = document.getElementById("prefix");
         const $input = document.getElementById("input");
         const $output = document.getElementById("output");
         const $inputDebug = document.getElementById("inputDebug");
@@ -43,11 +44,11 @@
             if (e) e.preventDefault();
             if (tokenizer !== null && model !== null) {
                 console.log("TRANSLATE");
-                const input = $input.value;
+                const input = $prefix.value.trim() + " " + $input.value.trim();
                 const inputTokenIds = tokenizer.encode(input);
                 const initialOutputTokenIds = tokenizer.encode(" ");
                 $inputDebug.innerText = inputTokenIds.join(" ");
-                const outputTokens = await model.generate(inputTokenIds, initialOutputTokenIds);
+                const outputTokens = await model.generate(inputTokenIds, 512);
                 $outputDebug.innerText = outputTokens.join(" ");
                 $output.value = tokenizer.decode(outputTokens);
             }

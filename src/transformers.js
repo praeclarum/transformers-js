@@ -51,12 +51,15 @@ class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
         super(encoderSource, initDecoderSource, decoderSource);
     }
 
-    async generate(inputTokenIds, initialOutputTokenIds) {
+    async generate(inputTokenIds, maxLength) {
+        // attention_mask=token['attention_mask'], num_beams=2
+        const startOfDecoderTokenId = 0;
+        const endOfDecoderTokenId = 1;
         let encoderOutputs = null;
         let pastKeyValues = null;
-        let outputTokenIds = [initialOutputTokenIds[0]];
+        let outputTokenIds = [startOfDecoderTokenId];
         let numOutputTokens = 1;
-        const maxOutputTokens = numOutputTokens + 3;
+        const maxOutputTokens = numOutputTokens + maxLength;
         while (numOutputTokens < maxOutputTokens) {
             let output = await this.forward(inputTokenIds, outputTokenIds, encoderOutputs, pastKeyValues);
             pastKeyValues = output.pastKeyValues;
@@ -64,12 +67,29 @@ class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
             let newTokenId = this.sample(output.logits);
             outputTokenIds.push(newTokenId);
             numOutputTokens++;
+            if (newTokenId === endOfDecoderTokenId) {
+                break;
+            }
         }
         return outputTokenIds;
     }
 
     sample(logits) {
-        return 42;
+        let shape = logits.dims;
+        let [batchSize, seqLength, vocabSize] = shape;
+        let n = batchSize * seqLength * vocabSize;
+        let p = Array(vocabSize);
+        let startIndex = n - vocabSize;
+        let argmaxi = 0;
+        let argmax = logits.data[startIndex + argmaxi];
+        for (let i = 1; i < vocabSize; i++) {
+            let l = logits.data[startIndex + i];
+            if (l > argmax) {
+                argmaxi = i;
+                argmax = l;
+            }
+        }
+        return argmaxi;
     }
 
     async forward(inputIds, decoderInputIds, encoderOutputs, pastKeyValues) {
