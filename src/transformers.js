@@ -38,51 +38,86 @@ class AutoModelForSeq2SeqLM {
     }
 }
 
+class Seq2SeqLMOutput {
+    constructor(logits, pastKeyValues, encoderOutputs) {
+        this.logits = logits;
+        this.pastKeyValues = pastKeyValues;
+        this.encoderOutputs = encoderOutputs;
+    }
+}
 
 class T5ForConditionalGeneration extends AutoModelForSeq2SeqLM {
     constructor(encoderSource, initDecoderSource, decoderSource) {
         super(encoderSource, initDecoderSource, decoderSource);
     }
-    async generate(inputTokens) {
+
+    async generate(inputTokenIds, initialOutputTokenIds) {
+        let encoderOutputs = null;
+        let pastKeyValues = null;
+        let outputTokenIds = [initialOutputTokenIds[0]];
+        let numOutputTokens = 1;
+        const maxOutputTokens = numOutputTokens + 2;
+        while (numOutputTokens < maxOutputTokens) {
+            let output = await this.forward(inputTokenIds, outputTokenIds, encoderOutputs, pastKeyValues);
+            pastKeyValues = output.pastKeyValues;
+            encoderOutputs = output.encoderOutputs;
+            let newTokenId = this.sample(output.logits, numOutputTokens);
+            outputTokenIds.push(newTokenId);
+            numOutputTokens++;
+        }
+        return outputTokenIds;
+    }
+
+    sample(logits, index) {
+        return 42;
+    }
+
+    async forward(inputIds, decoderInputIds, encoderOutputs, pastKeyValues) {
         await this.ensureLoaded();
 
-        console.log("Encoding...");
-        const inputIds = new ort.Tensor("int64", new BigInt64Array(inputTokens.map(x => BigInt(x))), [1, inputTokens.length]);
-        const encoderAttentionMask = new ort.Tensor("int64", new BigInt64Array(inputTokens.length).fill(1n), [1, inputTokens.length]);
-        const encoderFeeds = {
-            "input_ids": inputIds,
-            "attention_mask": encoderAttentionMask,
+        const inputIdsTensor = new ort.Tensor("int64", new BigInt64Array(inputIds.map(x => BigInt(x))), [1, inputIds.length]);
+        const encoderAttentionMaskTensor = new ort.Tensor("int64", new BigInt64Array(inputIds.length).fill(1n), [1, inputIds.length]);
+        if (encoderOutputs === null) {
+            console.log("Encoding...");
+            const encoderFeeds = {
+                "input_ids": inputIdsTensor,
+                "attention_mask": encoderAttentionMaskTensor,
+            }
+            const encoderResults = await this.encoderSession.run(encoderFeeds);
+            const encoderHiddenStates = encoderResults.hidden_states;
+            encoderOutputs = encoderHiddenStates;
+            console.log("Encoding done.", encoderOutputs);
         }
-        const encoderResults = await this.encoderSession.run(encoderFeeds);
-        const encoderHiddenStates = encoderResults.hidden_states;
-        console.log("Encoding done.", encoderResults);
 
-        console.log("Init Decoding...");
-        const decoderInputIds = new ort.Tensor("int64", new BigInt64Array(inputTokens.map(x => BigInt(x))), [1, inputTokens.length]);
-        const decoderAttentionMask = new ort.Tensor("int64", new BigInt64Array(inputTokens.length).fill(1n), [1, inputTokens.length]);
-        const initDecoderFeeds = {
-            "input_ids": decoderInputIds,
-            "encoder_attention_mask": decoderAttentionMask,
-            "encoder_hidden_states": encoderHiddenStates,
-        };
-        const initDecoderResults = await this.initDecoderSession.run(initDecoderFeeds);
-        const initDecoderPastKeyValues = this.getPastKeyValues(initDecoderResults);
-        console.log("Init Decoding done.", initDecoderResults, initDecoderPastKeyValues);
-
-        console.log("Decoding...");
+        const decoderInputIdsTensor = new ort.Tensor("int64", new BigInt64Array(decoderInputIds.map(x => BigInt(x))), [1, decoderInputIds.length]);
+        const decoderAttentionMaskTensor = new ort.Tensor("int64", new BigInt64Array(decoderInputIds.length).fill(1n), [1, decoderInputIds.length]);
         const decoderFeeds = {
-            "input_ids": decoderInputIds,
-            "encoder_attention_mask": decoderAttentionMask,
-            "encoder_hidden_states": encoderHiddenStates,
+            // "input_ids": decoderInputIdsTensor,
+            // "encoder_attention_mask": decoderAttentionMaskTensor,
+            "input_ids": decoderInputIdsTensor,
+            "encoder_attention_mask": encoderAttentionMaskTensor,
+            "encoder_hidden_states": encoderOutputs,
         };
-        for (const [k, v] of initDecoderPastKeyValues) {
-            decoderFeeds[k] = v;
+        let logits = null;
+
+        if (pastKeyValues === null) {
+            console.log("Init Decoding...");
+            const initDecoderResults = await this.initDecoderSession.run(decoderFeeds);
+            logits = initDecoderResults.logits;
+            pastKeyValues = this.getPastKeyValues(initDecoderResults);
+            console.log("Init Decoding done.", logits, pastKeyValues);
         }
-        const decoderResults = await this.decoderSession.run(decoderFeeds);
-        const logits = decoderResults.logits;
-        const decoderPastKeyValues = this.getPastKeyValues(decoderResults);
-        console.log("Decoding done.", logits, decoderPastKeyValues);
-        return inputTokens;
+        else {
+            console.log("Decoding...");
+            for (const [k, v] of pastKeyValues) {
+                decoderFeeds[k] = v;
+            }
+            const decoderResults = await this.decoderSession.run(decoderFeeds);
+            logits = decoderResults.logits;
+            pastKeyValues = this.getPastKeyValues(decoderResults);
+            console.log("Decoding done.", logits, pastKeyValues);
+        }
+        return new Seq2SeqLMOutput(logits, pastKeyValues, encoderOutputs);
     }
 
     getPastKeyValues(decoderResults) {

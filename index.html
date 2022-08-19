@@ -44,9 +44,10 @@
             if (tokenizer !== null && model !== null) {
                 console.log("TRANSLATE");
                 const input = $input.value;
-                const inputTokens = tokenizer.encode(input);
-                $inputDebug.innerText = inputTokens.join(" ");
-                const outputTokens = await model.generate(inputTokens);
+                const inputTokenIds = tokenizer.encode(input);
+                const initialOutputTokenIds = tokenizer.encode(" ");
+                $inputDebug.innerText = inputTokenIds.join(" ");
+                const outputTokens = await model.generate(inputTokenIds, initialOutputTokenIds);
                 $outputDebug.innerText = outputTokens.join(" ");
                 $output.value = tokenizer.decode(outputTokens);
             }
