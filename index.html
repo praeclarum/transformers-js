@@ -10,14 +10,11 @@
         }
         a {
             /* color: #fda !important; */
-            background-color: #fda;
-            color: #334 !important;
             text-decoration: none;
-            padding: 0.5em 1em;
-            border-radius: 0.75em;
-            border: 1px solid #334;
+            border-radius: 0.25em;
             font-weight: bold;
             font-size: 90%;
+            color: #fda;
         }
         a:hover {
             background-color: #eee;
@@ -28,6 +25,14 @@
             justify-content: center;
             align-items: center;
         }
+        nav > a {
+            margin: 0em 0.5em;
+            padding: 0.5em 1em;
+            border-radius: 0.75em;
+            border: 1px solid #334;
+            background-color: #fda;
+            color: #334 !important;
+        }
         .content {
             margin: auto;
         }
@@ -36,7 +41,7 @@
             margin: 2em 4em;
             color: #ccc;
         }
-        h1, h2, h3, h4 {
+        h1, h2, h3, h4, b {
             color: #eee;
             text-align: center;
         }
@@ -76,6 +81,9 @@
             font-weight: bold;
             font-size: 90%;
             margin-bottom: 2em;
+        }
+        .translation-group > div select:hover {
+            background-color: #eee;
         }
         select.input {
             background-color: #fda;
@@ -118,7 +126,9 @@
             <img src="icon.png" style="height:4em;margin-top:1em;"/><h1>transformers-js</h1>
         </header>
         <nav>
-            <p><a href="/tests/test-tokenizers">Test Tokenizers</a></p>
+            <a href="https://github.com/praeclarum/transformers-js">Source Code on GitHub</a>
+            <a href="https://praeclarum.org/">Blog</a>
+            <a href="/tests/test-tokenizers">Test Tokenizers</a></p>
         </nav>
 
         <section class="translator">
@@ -145,7 +155,7 @@
                         </div>
                     </div>
                     <p><input type="hidden" value="Generate"></p>
-                    <p>This demo uses the t5-small neural network.</p>
+                    <p style="text-align:center;">This demo uses the <a href="https://huggingface.co/t5-small">t5-small</a> neural network.</p>
                 </form>
             </section>
         </div>
