@@ -18,6 +18,7 @@ demo: demomodel
 	cp -a tests/*.json $(DEMODIR)/tests
 	cp -a index.html $(DEMODIR)/
 	cp -a icon.png $(DEMODIR)/favicon.ico
+	cp -a icon.png $(DEMODIR)/icon.png
 	@echo "Built Demo!"
 
 demomodel: $(DEMODIR)/models/t5-small-decoder-quantized.onnx
