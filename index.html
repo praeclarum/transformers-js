@@ -202,8 +202,8 @@
             window.translateInputTimeout = setTimeout(translateInput, 33);
         }
 
-        function getPrefix() {
-            return `translate ${$inputLang.value} to ${$outputLang.value}: `;
+        function getFullInput() {
+            return `translate ${$inputLang.value} to ${$outputLang.value}: ${$input.value.trim()}`;
         }
         
         async function translateInput(e) {
@@ -211,18 +211,26 @@
             if (tokenizer !== null && model !== null) {
                 $status.innerText = "Translating...";
                 await delay(33); // Give the UI a chance to update.
-                const input = getPrefix() + $input.value.trim();
+                const input = getFullInput();
                 const inputTokenIds = tokenizer.encode(input);
                 $inputDebug.innerText = inputTokenIds.join(" ");
-                async function showOutput(outputTokenIds) {
-                    const output = tokenizer.decode(outputTokenIds, true).trim();
-                    $output.innerText = output;
-                    $outputDebug.innerText = outputTokenIds.join(" ");
-                    await delay(33); // Give the UI a chance to update.
-                    return true;
+                async function showOutput(outputTokenIds, forInputIds) {
+                    const newInputIds = tokenizer.encode(getFullInput());
+                    let inputSame = newInputIds.length === forInputIds.length;
+                    for (let i = 0; inputSame && i < newInputIds.length; i++) {
+                        if (newInputIds[i] !== forInputIds[i]) {
+                            inputSame = false;
+                        }
+                    }
+                    if (inputSame) {
+                        const output = tokenizer.decode(outputTokenIds, true).trim();
+                        $output.innerText = output;
+                        $outputDebug.innerText = outputTokenIds.join(" ");
+                        await delay(33); // Give the UI a chance to update.
+                    }
+                    return inputSame;
                 }
                 const finalOutputTokenIds = await model.generate(inputTokenIds, maxGenTokens, showOutput);
-                await showOutput(finalOutputTokenIds);
                 $status.innerText = "Ready";
             }
             else {

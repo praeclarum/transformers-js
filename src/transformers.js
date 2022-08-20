@@ -64,7 +64,7 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         const maxOutputTokens = numOutputTokens + maxLength;
         async function progress() {
             if (progressAsyncCallback) {
-                shouldContinue = await progressAsyncCallback(outputTokenIds);
+                shouldContinue = await progressAsyncCallback(outputTokenIds, inputTokenIds);
             }
         }
         while (shouldContinue && numOutputTokens < maxOutputTokens) {
