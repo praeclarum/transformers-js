@@ -1,9 +1,9 @@
 class PretrainedModel {
-    static async loadSession(modelSource, executionProvider) {
+    static async loadSession(modelSource) {
         console.log('Loading session from', modelSource);
         const response = await fetch(modelSource, { cache: 'force-cache' });
         const modelBuffer = await response.arrayBuffer();
-        const session = await ort.InferenceSession.create(modelBuffer, { executionProviders: [executionProvider||"wasm", "wasm"] });
+        const session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ["wasm"] });
         console.log('Session loaded from', modelSource);
         return session;
     }
@@ -18,7 +18,7 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         this.decoderSession = decoderSession;
     }
 
-    static async fromPretrained(modelId, modelsPath, executionProvider, progressAsyncCallback) {
+    static async fromPretrained(modelId, modelsPath, progressAsyncCallback) {
         // TODO: This should load different model types. Right now it's hardcoded to T5.
 
         const modelIdParts = modelId.split('/');
@@ -39,9 +39,9 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
             }
         }
         await incrementProgress();
-        const encoderSessionPromise = this.loadSession(encoderUrl, executionProvider);
-        const initDecoderSessionPromise = this.loadSession(initDecoderUrl, executionProvider);
-        const decoderSessionPromise = this.loadSession(decoderUrl, executionProvider);
+        const encoderSessionPromise = this.loadSession(encoderUrl);
+        const initDecoderSessionPromise = this.loadSession(initDecoderUrl);
+        const decoderSessionPromise = this.loadSession(decoderUrl);
         const encoderSession = await encoderSessionPromise;
         await incrementProgress();
         const initDecoderSession = await initDecoderSessionPromise;
