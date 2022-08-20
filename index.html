@@ -54,8 +54,7 @@
             margin-bottom: 0.5em;
             background-color: #334;
             color: #ccc;
-            /* border: solid 1px rgb(34, 34, 53); */
-            border-radius: 0.5em;
+            border-radius: 1.0em;
             padding: 0 0;
             overflow: hidden;
         }
@@ -63,32 +62,51 @@
             flex: 1;
             padding: 1em;
             margin: 0;
+            text-align: center;
         }
-        .translation-input {
+        .translation-group > div select {
+            outline: none;
+            font-size: 100%;
+            font-weight: bold;
+            color: #334 !important;
+            text-decoration: none;
+            padding: 0.5em 1em;
+            border-radius: 0.75em;
+            border: 1px solid #334;
+            font-weight: bold;
+            font-size: 90%;
+            margin-bottom: 2em;
+        }
+        select.input {
+            background-color: #fda;
+        }
+        select.output {
+            background-color: #adf;
+        }
+        .translation-input textarea {
+            color: #fda;
+        }
+        .translation-output .textarea {
+            color: #adf;
         }
         .translation-output {
             border-left: solid 1px rgb(34, 34, 53);
             background-color: rgb(28, 28, 44);
         }
-        .translation-group h1 {
-            color: red;
-        }
         .translation-group textarea, .translation-group .textarea {
             display: block;
             padding: 0 0;
             background-color: transparent;
-            color: #fff;
             border: none;
             width: 100%;
             height: 200px;
             resize: none;
             outline: none;
             margin: 0 0;
+            text-align: left;
+            font-size: 32px;
         }
-        .translation-output .textarea {
-            color: #fda;
-        }
-        .debug { opacity: 0.25; font-family: monospace; }
+        .debug { opacity: 0.25; font-family: monospace; text-align: left; }
         #input { font-family: Papyrus, sans-serif; font-size: 32px; }
         #output { font-family: monospace; font-size: 32px; }
         </style>
@@ -104,39 +122,46 @@
         </nav>
 
         <section class="translator">
-            <h2>Translation Demo</h2>
             <form onsubmit="translateInput(event)" class="translation-form">
                 <p style="text-align:center;"><b>Status</b> <span id="status">Loading...</span></p>
                 <div class="translation-group">
                     <div class="translation-input">
-                        <h3><label for="prefix">Input</label></h3>
-                        <p><input type="hidden" id="prefix" name="prefix" value="translate English to French:" style="width: 100%;" /></p>
-                        <textarea id="input" name="input" oninput="onInputChanged(event)">The universe is a dark forest.</textarea>
+                        <p><select id="inputLang" name="inputLang" class="input" onchange="onLangSelected(event)">
+                            <option value="English" selected>Translate from English</option>
+                            <!-- <option value="French">Translate from French</option>
+                            <option value="German">Translate from German</option> -->
+                        </select></p>
+                        <textarea id="input" name="input" class="input" oninput="onInputChanged(event)">The universe is a dark forest.</textarea>
                         <p id="inputDebug" class="debug"></p>
                     </div>
                     <div class="translation-output">
-                        <h3><label for="output">Translation</label></h3>
+                        <p><select id="outputLang" name="outputLang" class="output" onchange="onLangSelected(event)">
+                            <!-- <option value="English">Translate to English</option> -->
+                            <option value="French" selected>Translate to French</option>
+                            <option value="German">Translate to German</option>
+                        </select></p>
                         <p id="output" class="textarea"><p>
-                        <p id="outputDebug" class="debug"></p>
+                            <p id="outputDebug" class="debug"></p>
+                        </div>
                     </div>
-                </div>
-                <p><input type="hidden" value="Generate"></p>
-                <p>This demo uses the t5-small neural network.</p>
-            </form>
-        </section>
-    </div>
-
+                    <p><input type="hidden" value="Generate"></p>
+                    <p>This demo uses the t5-small neural network.</p>
+                </form>
+            </section>
+        </div>
+        
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.js"></script>
     <script src="src/tokenizers.js"></script>
     <script src="src/transformers.js"></script>
     <script type="text/javascript">
 
         const $status = document.getElementById("status");
-        const $prefix = document.getElementById("prefix");
         const $input = document.getElementById("input");
         const $output = document.getElementById("output");
         const $inputDebug = document.getElementById("inputDebug");
         const $outputDebug = document.getElementById("outputDebug");
+        const $inputLang = document.getElementById("inputLang");
+        const $outputLang = document.getElementById("outputLang");
 
         let tokenizer = null;
         let model = null;
@@ -153,13 +178,26 @@
             }
             window.translateInputTimeout = setTimeout(translateInput, 750);
         }
+
+        async function onLangSelected(e) {
+            if (e) e.preventDefault();
+            // Throttle calls to translateInput
+            if (window.translateInputTimeout) {
+                clearTimeout(window.translateInputTimeout);
+            }
+            window.translateInputTimeout = setTimeout(translateInput, 33);
+        }
+
+        function getPrefix() {
+            return `translate ${$inputLang.value} to ${$outputLang.value}: `;
+        }
         
         async function translateInput(e) {
             if (e) e.preventDefault();
             if (tokenizer !== null && model !== null) {
                 $status.innerText = "Translating...";
                 await delay(33); // Give the UI a chance to update.
-                const input = $prefix.value.trim() + " " + $input.value.trim();
+                const input = getPrefix() + $input.value.trim();
                 const inputTokenIds = tokenizer.encode(input);
                 $inputDebug.innerText = inputTokenIds.join(" ");
                 async function showOutput(outputTokenIds) {
