@@ -50,7 +50,7 @@ python3 tools/convert_model.py t5-small models
 The library contains several components:
 
 1. [Tokenizers](#tokenizers) to load and execute pretrained tokenizers from their huggingface JSON representation.
-2. [Transformer Models](#transformer-models) to load and execute pretrained models from their ONNX representation.
+2. [Transformers](#transformers) to load and execute pretrained models from their ONNX representation.
 3. [Model Converter](#model-converter) to convert huggingface models to ONNX to be served by your static web server.
 
 
@@ -59,9 +59,24 @@ The library contains several components:
 [tokenizers.js](src/tokenizers.js)
 
 
-### Transformer Models
+### Transformers
 
 [transformers.js](src/transformers.js)
+
+
+#### Models
+
+Currently only the *T5* network is supported.
+
+
+#### Sampling
+
+The neural network outputs the logarithm of the probability of each token.
+In order to get a token, a probabilistic sample has to be taken.
+The following algorithms are implemented:
+
+* *Greedy*: Take the token with the highest probability.
+* *Top-k*: Take the top-k tokens with the highest probability.
 
 
 ### Model Converter

@@ -52,7 +52,21 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         return new T5ForConditionalGeneration(encoderSession, initDecoderSession, decoderSession);
     }
 
-    async generate(inputTokenIds, maxLength, progressAsyncCallback) {
+    /**
+     * Generate a sequence of tokens.
+     * 
+     * @param {Array} inputTokenIds
+     * @param {Object} options Properties:
+     *  `maxLength` for the maximum generated sequence length,
+     *  `topK` for the number of logits to consider when sampling.
+     * @param {Promise} progressAsyncCallback 
+     * @returns The generated sequence of tokens.
+     */
+    async generate(inputTokenIds, options, progressAsyncCallback) {
+        const maxLength = options.maxLength || 100;
+        const topK = options.topK || 0;
+        const topP = options.topP || 0;
+        const numBeams = options.numBeams || 0;
         // attention_mask=token['attention_mask'], num_beams=2
         const startOfDecoderTokenId = 0;
         const endOfDecoderTokenId = 1;
@@ -67,11 +81,15 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
                 shouldContinue = await progressAsyncCallback(outputTokenIds, inputTokenIds);
             }
         }
+        let sampler = x => this.sampleLogitsGreedily(x);
+        if (topK > 0) {
+            sampler = x => this.sampleLogitsTopK(x, topK);
+        }
         while (shouldContinue && numOutputTokens < maxOutputTokens) {
             let output = await this.forward(inputTokenIds, outputTokenIds, encoderOutputs, pastKeyValues);
             pastKeyValues = output.pastKeyValues;
             encoderOutputs = output.encoderOutputs;
-            let newTokenId = this.sampleGreedily(output.logits);
+            let newTokenId = sampler(output.logits);
             outputTokenIds.push(newTokenId);
             numOutputTokens++;
             await progress(outputTokenIds);
@@ -82,7 +100,7 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         return outputTokenIds;
     }
 
-    sampleGreedily(logits) {
+    sampleLogitsGreedily(logits) {
         let shape = logits.dims;
         let [batchSize, seqLength, vocabSize] = shape;
         let n = batchSize * seqLength * vocabSize;
@@ -97,6 +115,35 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
             }
         }
         return argmaxi;
+    }
+    sampleLogitsTopK(logits, k) {
+        let shape = logits.dims;
+        let [batchSize, seqLength, vocabSize] = shape;
+        let n = batchSize * seqLength * vocabSize;
+        let startIndex = n - vocabSize;
+        let logs = logits.data.slice(startIndex);
+        k = Math.min(k, vocabSize);
+        let logitAndId = Array.from(logs).map((x, i) => [x, i])
+            .sort((a, b) => b[0] - a[0]);
+        const sMin = Math.exp(-1.0e10);
+        let sumS = 0.0;
+        for (let i = 0; i < logitAndId.length; i++) {
+            const s = i < k ? Math.exp(logitAndId[i][0]) : sMin;
+            sumS += s;
+            logitAndId[i][0] = s;
+        }
+        let pScale = 1.0 / sumS;
+        for (let i = 0; i < logitAndId.length; i++) {
+            logitAndId[i][0] *= pScale;
+        }
+        let r = Math.random();
+        for (let i = 0; i < logitAndId.length; i++) {
+            r -= logitAndId[i][0];
+            if (r <= 0.0) {
+                return logitAndId[i][1];
+            }
+        }
+        return logitAndId[0][1];
     }
 }
 
