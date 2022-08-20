@@ -27,13 +27,13 @@ This example shows how to use the library to load the T5 neural network to trans
 
 ```js
 // Load the tokenizer and model.
-const tokenizer = await AutoTokenizer.fromPretrained("t5-small", models_path="/models");
-const model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", models_path="/models");
+const tokenizer = await AutoTokenizer.fromPretrained("t5-small", "/models");
+const model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models", "wasm", null);
 
 // Translate "Hello, world!"
 const english = "Hello, world!";
 const inputTokenIds = tokenizer.encode("translate English to French: " + english);
-const outputTokenIds = await model.generate(inputTokenIds, 140);
+const outputTokenIds = await model.generate(inputTokenIds, {maxLength:50});
 const french = tokenizer.decode(outputTokenIds, true);
 console.log(french); // "Bonjour monde!"
 ```
