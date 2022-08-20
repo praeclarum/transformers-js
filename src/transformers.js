@@ -125,21 +125,17 @@ class AutoModelForSeq2SeqLM extends PretrainedModel {
         k = Math.min(k, vocabSize);
         let logitAndId = Array.from(logs).map((x, i) => [x, i])
             .sort((a, b) => b[0] - a[0]);
-        const sMin = Math.exp(-1.0e10);
+        const sMin = Math.exp(-100.0);
         let sumS = 0.0;
         for (let i = 0; i < logitAndId.length; i++) {
             const s = i < k ? Math.exp(logitAndId[i][0]) : sMin;
             sumS += s;
             logitAndId[i][0] = s;
         }
-        let pScale = 1.0 / sumS;
-        for (let i = 0; i < logitAndId.length; i++) {
-            logitAndId[i][0] *= pScale;
-        }
-        let r = Math.random();
+        let r = Math.random() * sumS;
         for (let i = 0; i < logitAndId.length; i++) {
             r -= logitAndId[i][0];
-            if (r <= 0.0) {
+            if (r <= 0) {
                 return logitAndId[i][1];
             }
         }
