@@ -8,6 +8,7 @@
             background: linear-gradient(to bottom, rgb(50, 50, 78) 0%, rgb(25, 25, 38) 100%), rgb(50, 50, 78);
             color: #ccc;
         }
+
         a {
             /* color: #fda !important; */
             text-decoration: none;
@@ -16,16 +17,19 @@
             font-size: 90%;
             color: #fda;
         }
+
         a:hover {
             background-color: #eee;
             color: #000 !important;
         }
+
         nav {
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        nav > a {
+
+        nav>a {
             margin: 0em 0.5em;
             padding: 0.5em 1em;
             border-radius: 0.75em;
@@ -33,36 +37,50 @@
             background-color: #fda;
             color: #334 !important;
         }
+
         .content {
             margin: auto;
         }
-        header, nav, section {
+
+        header,
+        nav,
+        section {
             padding: 0em 1em;
             margin: 2em 4em;
             color: #ccc;
         }
-        h1, h2, h3, h4, b {
+
+        h1,
+        h2,
+        h3,
+        h4,
+        b {
             color: #eee;
             text-align: center;
         }
+
         header {
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: center;
         }
-        header > img {
+
+        header>img {
             display: inline-block;
             margin: 0 0;
         }
-        header > h1 {
+
+        header>h1 {
             display: inline-block;
             padding-top: 12px;
             margin: 0 10px;
         }
+
         .translation-form {
             margin: 0;
         }
+
         .translation-group {
             display: flex;
             flex-direction: row;
@@ -75,13 +93,15 @@
             padding: 0 0;
             overflow: hidden;
         }
-        .translation-group > div {
+
+        .translation-group>div {
             flex: 1;
             padding: 1em;
             margin: 0;
             text-align: center;
         }
-        .translation-group > div select {
+
+        .translation-group>div select {
             outline: none;
             font-size: 100%;
             font-weight: bold;
@@ -94,26 +114,34 @@
             font-size: 90%;
             margin-bottom: 2em;
         }
-        .translation-group > div select:hover {
+
+        .translation-group>div select:hover {
             background-color: #eee;
         }
+
         select.input {
             background-color: #fda;
         }
+
         select.output {
             background-color: #adf;
         }
+
         .translation-input textarea {
             color: #fda;
         }
+
         .translation-output .textarea {
             color: #adf;
         }
+
         .translation-output {
             border-left: solid 1px rgb(34, 34, 53);
             background-color: rgb(28, 28, 44);
         }
-        .translation-group textarea, .translation-group .textarea {
+
+        .translation-group textarea,
+        .translation-group .textarea {
             display: block;
             padding: 0 0;
             background-color: transparent;
@@ -126,16 +154,68 @@
             text-align: left;
             font-size: 32px;
         }
-        .debug { opacity: 0.25; font-family: monospace; text-align: left; }
-        #input { font-family: Papyrus, sans-serif; font-size: 32px; }
-        #output { font-family: monospace; font-size: 32px; }
-        </style>
+
+        .debug {
+            opacity: 0.25;
+            font-family: monospace;
+            text-align: left;
+        }
+
+        #input {
+            font-family: Papyrus, sans-serif;
+            font-size: 32px;
+        }
+
+        #output {
+            font-family: monospace;
+            font-size: 32px;
+        }
+
+        .translation-output {
+            position: relative;
+        }
+
+        .translation-output .flip-flop {
+            position: absolute;
+            top: 0.5em;
+            left: -1.0em;
+            width: 2em;
+            height: 2em;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: #ddd;
+            border-radius: 1.0em;
+            outline: none;
+            border: none;
+            padding: 0 0;
+            color: #333;
+        }
+
+        .translation-output .flip-flop:hover {
+            background-color: #fda;
+            color: #334 !important;
+        }
+
+        .translation-output .refresh {
+            position: absolute;
+            top: 0.125em;
+            right: 0;
+            border: none;
+            background-color: transparent;
+            color:#334;
+            width: 2em;
+            height: 2em;
+            font-size: 40px;
+            font-weight: normal;
+        }
+    </style>
 </head>
 
 <body>
     <div class="content">
         <header>
-            <img src="icon.png" style="height:4em;margin-top:1em;"/><h1>transformers-js</h1>
+            <img src="icon.png" style="height:4em;margin-top:1em;" />
+            <h1>transformers-js</h1>
         </header>
         <nav>
             <a href="https://github.com/praeclarum/transformers-js">Source Code on GitHub</a>
@@ -148,31 +228,44 @@
                 <p style="text-align:center;"><b>Status</b> <span id="status">Loading...</span></p>
                 <div class="translation-group">
                     <div class="translation-input">
-                        <p><select id="inputLang" name="inputLang" class="input" onchange="onLangSelected(event)">
-                            <option value="English" selected>Translate from English</option>
-                            <!-- <option value="French">Translate from French</option>
-                            <option value="German">Translate from German</option> -->
-                        </select></p>
-                        <textarea id="input" name="input" class="input" oninput="onInputChanged(event)">The universe is a dark forest.</textarea>
+                        <p>
+                            <select id="inputLang" name="inputLang" class="input" onchange="onLangSelected(event)">
+                                <!-- <option value="Akkadian">Translate from Akkadian</option> -->
+                                <option value="English" selected>Translate from English</option>
+                                <!-- <option value="French">Translate from French</option>
+                                <option value="German">Translate from German</option>
+                                <option value="Romanian">Translate from Romanian</option> -->
+                                <!-- <option value="Sumerian">Translate from Sumerian</option> -->
+                            </select>
+                        </p>
+                        <textarea id="input" name="input" class="input"
+                            oninput="onInputChanged(event)">The universe is a dark forest.</textarea>
                         <p id="inputDebug" class="debug"></p>
                     </div>
                     <div class="translation-output">
-                        <p><select id="outputLang" name="outputLang" class="output" onchange="onLangSelected(event)">
-                            <!-- <option value="English">Translate to English</option> -->
-                            <option value="French" selected>Translate to French</option>
-                            <option value="German">Translate to German</option>
-                            <option value="Romanian">Translate to Romanian</option>
-                        </select></p>
-                        <p id="output" class="textarea"><p>
-                            <p id="outputDebug" class="debug"></p>
-                        </div>
+                        <button class="flip-flop" onclick="flipFlop(event)" hidden>⇔</button>
+                        <button class="refresh" onclick="translateInput(event)">↺</button>
+                        <p>
+                            <select id="outputLang" name="outputLang" class="output" onchange="onLangSelected(event)">
+                                <!-- <option value="Akkadian">Translate to Akkadian</option> -->
+                                <!-- <option value="English">Translate to English</option> -->
+                                <option value="French" selected>Translate to French</option>
+                                <option value="German">Translate to German</option>
+                                <option value="Romanian">Translate to Romanian</option>
+                                <!-- <option value="Sumerian">Translate to Sumerian</option> -->
+                            </select>
+                        </p>
+                        <p id="output" class="textarea"></p>
+                        <p id="outputDebug" class="debug"></p>
                     </div>
-                    <p><input type="hidden" value="Generate"></p>
-                    <p style="text-align:center;">This translator uses the <a href="https://huggingface.co/t5-small">t5-small</a> neural network.</p>
-                </form>
-            </section>
-        </div>
-        
+                </div>
+                <p style="text-align:center;">This translator uses the
+                    <a id="modellink" href="https://huggingface.co/t5-base">t5-base</a>
+                    neural network.</p>
+            </form>
+        </section>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.js"></script>
     <script src="src/tokenizers.js"></script>
     <script src="src/transformers.js"></script>
@@ -185,6 +278,9 @@
         const $outputDebug = document.getElementById("outputDebug");
         const $inputLang = document.getElementById("inputLang");
         const $outputLang = document.getElementById("outputLang");
+        const $modellink = document.getElementById("modellink");
+
+        const modelId = "t5-small";
 
         const generationOptions = {
             "maxLength": 50,
@@ -196,6 +292,16 @@
 
         function delay(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function flipFlop(e) {
+            e.preventDefault();
+            const input = $input.value;
+            $input.value = $output.innerText;
+            $output.innerText = input;
+            const inputLang = $inputLang.value;
+            $inputLang.value = $outputLang.value;
+            $outputLang.value = inputLang;
         }
 
         async function onInputChanged(e) {
@@ -219,7 +325,7 @@
         function getFullInput() {
             return `translate ${$inputLang.value} to ${$outputLang.value}: ${$input.value.trim()}`;
         }
-        
+
         async function translateInput(e) {
             if (e) e.preventDefault();
             if (tokenizer !== null && model !== null) {
@@ -255,9 +361,12 @@
         }
 
         async function main() {
-            tokenizer = await AutoTokenizer.fromPretrained("t5-small", "/models");
+            $modellink.href = `https://huggingface.co/${modelId}`;
+            $modellink.innerText = modelId;
+
+            tokenizer = await AutoTokenizer.fromPretrained(modelId, "/models");
             console.log(tokenizer);
-            model = await AutoModelForSeq2SeqLM.fromPretrained("t5-small", "/models", async function(progress) {
+            model = await AutoModelForSeq2SeqLM.fromPretrained(modelId, "/models", async function (progress) {
                 $status.innerText = `Loading the neural network... ${Math.round(progress * 100)}%`;
                 await delay(100); // Give the UI a chance to update.
             });
